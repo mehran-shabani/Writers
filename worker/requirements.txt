@@ -1,0 +1,18 @@
+# Worker dependencies
+# Uses the same dependencies as the backend for shared code access
+
+# Core dependencies (same as backend)
+sqlmodel==0.0.14
+psycopg2-binary==2.9.9
+pydantic==2.5.0
+python-dotenv==1.0.0
+
+# Celery and Redis
+celery==5.3.4
+redis==5.0.1
+
+# For future audio processing integration
+# Uncomment when implementing actual transcription
+# openai-whisper==1.0.0
+# google-cloud-speech==2.21.0
+# boto3==1.28.85  # For AWS Transcribe

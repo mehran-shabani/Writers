@@ -8,8 +8,10 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
+    PROCESSING = "processing"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
+    FAILED = "failed"
     CANCELLED = "cancelled"
 
 
@@ -24,6 +26,8 @@ class Task(SQLModel, table=True):
     )
     user_id: UUID = Field(foreign_key="users.id", index=True)
     file_path: Optional[str] = Field(default=None, max_length=500)
+    result_path: Optional[str] = Field(default=None, max_length=500)
     due_date: Optional[datetime] = Field(default=None)
+    completed_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

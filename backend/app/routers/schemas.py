@@ -22,7 +22,9 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     user_id: UUID
     file_path: Optional[str]
+    result_path: Optional[str]
     due_date: Optional[datetime]
+    completed_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
 
