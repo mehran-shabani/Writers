@@ -300,15 +300,17 @@ result = transcribe_audio.delay(task_id="uuid-string", audio_file_path="audio.mp
 ```
 
 Features:
+- **Singleton Model**: Uses optimized singleton pattern for warm start reduction
+- **Resource Monitoring**: Real-time VRAM/RAM monitoring to prevent OOM
 - Updates task status to PROCESSING during execution
 - Reads audio file from `/storage/uploads/`
-- Performs speech-to-text conversion
+- Performs speech-to-text conversion with configurable model and precision
 - Saves transcription result to `/storage/results/`
 - Updates database with result_path, completed_at, and status=COMPLETED
-- On error, sets status=FAILED with proper logging
-- Language detection (supports Persian/Farsi)
-- Confidence scoring
-- Duration calculation
+- On error, sets status=FAILED with comprehensive logging and resource diagnostics
+- Language detection (supports Persian/Farsi and auto-detection)
+- Confidence scoring and duration calculation
+- Thread-safe model loading with automatic memory optimization
 
 Implementation details:
 - File reading: Audio file is read from `/storage/uploads/` directory
@@ -354,6 +356,10 @@ result = process_task_file.delay(task_id="uuid-string", file_path="/path/to/file
 
 #### Starting Celery Workers
 
+The worker includes optimized model initialization with singleton pattern for warm start reduction and comprehensive resource monitoring to prevent OOM errors.
+
+##### Quick Start (Using Entrypoint Script)
+
 ```bash
 # Set environment variables
 export REDIS_URL=redis://localhost:6379
@@ -361,18 +367,77 @@ export REDIS_QUEUE_DB=2
 export STORAGE_ROOT=/storage
 export DATABASE_URL=postgresql://user:password@localhost:5432/writers_db
 
+# Model configuration (for optimized performance)
+export MODEL_DEVICE=cuda                    # cuda or cpu
+export MODEL_DEVICE_INDEX=0                 # GPU index (0, 1, 2, ...)
+export MODEL_COMPUTE_TYPE=float16           # float16, int8, or float32
+export MODEL_NAME=base                      # tiny, base, small, medium, large
+
+# Worker configuration
+export WORKER_CONCURRENCY=2                 # Number of concurrent workers
+export WORKER_QUEUE=media                   # Queue name(s)
+
+# Resource monitoring configuration
+export ENABLE_RESOURCE_MONITORING=true      # Enable VRAM/RAM monitoring
+export VRAM_WARNING_THRESHOLD=0.85          # VRAM warning at 85%
+export RAM_WARNING_THRESHOLD=0.90           # RAM warning at 90%
+
+# Start worker with entrypoint script
+cd /workspace/worker
+./entrypoint.sh
+```
+
+##### Manual Start (Advanced)
+
+```bash
 # Start default queue worker (from backend directory)
 cd backend
 celery -A app.celery_app worker --loglevel=info -Q default
 
-# Start media queue worker (for audio/video processing)
+# Start media queue worker with optimized settings
 cd backend
-celery -A app.celery_app worker --loglevel=info -Q media
+celery -A app.celery_app worker \
+    --loglevel=info \
+    --concurrency=2 \
+    --queues=media \
+    --max-tasks-per-child=100
 
 # Start worker for all queues
 cd backend
 celery -A app.celery_app worker --loglevel=info -Q default,media
 ```
+
+##### Worker Concurrency Guidelines
+
+The `--concurrency` parameter controls how many worker processes run in parallel. Choosing the right value is critical for optimal performance and resource utilization:
+
+**For Heavy Models (Large/Medium Whisper):**
+- **GPU**: `concurrency=1` or `2`
+- **Reason**: Large models consume significant GPU memory
+- Higher concurrency increases OOM (Out of Memory) risk
+
+**For Light Models (Tiny/Base Whisper):**
+- **GPU**: `concurrency=2` to `4`
+- **CPU**: `concurrency=(CPU cores) / 2`
+- **Reason**: Smaller models require less memory
+
+**For Multi-GPU Systems:**
+- Run multiple workers with different `MODEL_DEVICE_INDEX`
+- Example: worker1 on GPU:0, worker2 on GPU:1
+
+**General Considerations:**
+- **VRAM Available**: Ensure sufficient GPU memory
+- **System RAM**: Each worker needs ~2-4GB RAM
+- **I/O**: For large files, use lower concurrency
+- **Formula**: `concurrency = min(GPU_VRAM_GB / MODEL_SIZE_GB, CPU_CORES / 2, MAX_CONCURRENT_TASKS)`
+
+**Example Configurations:**
+- GPU 8GB VRAM + Whisper Base: `concurrency=2`
+- GPU 16GB VRAM + Whisper Medium: `concurrency=2`
+- GPU 24GB VRAM + Whisper Large: `concurrency=1` or `2`
+- CPU 16 cores + Whisper Base: `concurrency=4`
+
+**Best Practice**: Start with low concurrency and gradually increase while monitoring resources to find optimal value.
 
 #### Worker Directory
 
@@ -399,6 +464,68 @@ cd backend
 celery -A app.celery_app worker --loglevel=info -Q media
 ```
 
+**Model Optimization (Singleton Pattern):**
+
+The worker implements a singleton pattern for model initialization to significantly reduce warm start time and improve performance:
+
+- **Lazy Loading**: Model is loaded only once on first use
+- **Thread-Safe**: Uses locking mechanism for safe concurrent access
+- **Memory Efficient**: Model is shared across all tasks in the same worker process
+- **Configurable**: Supports device selection, compute type, and GPU index
+
+Configuration options:
+```python
+MODEL_DEVICE=cuda          # Device: cuda or cpu
+MODEL_DEVICE_INDEX=0       # GPU index for multi-GPU systems
+MODEL_COMPUTE_TYPE=float16 # Computation precision: float16, int8, float32
+MODEL_NAME=base           # Model size: tiny, base, small, medium, large
+```
+
+Benefits:
+- Reduces cold start latency from ~10-30s to <1s for subsequent tasks
+- Prevents redundant model loading in memory
+- Better GPU utilization
+
+**Resource Monitoring:**
+
+The worker includes comprehensive VRAM and RAM monitoring to prevent OOM errors:
+
+**Features:**
+- Real-time GPU memory tracking via nvidia-smi
+- System RAM monitoring via psutil
+- Automatic warnings when usage exceeds thresholds
+- Resource logging at key points (task start, before/after transcription, completion)
+
+**Configuration:**
+```bash
+ENABLE_RESOURCE_MONITORING=true   # Enable/disable monitoring
+VRAM_WARNING_THRESHOLD=0.85       # Warn at 85% VRAM usage
+RAM_WARNING_THRESHOLD=0.90        # Warn at 90% RAM usage
+```
+
+**Monitoring Points:**
+1. Task start - baseline resource usage
+2. Before transcription - pre-processing check
+3. After model initialization - verify model loaded successfully
+4. After transcription - detect memory leaks
+5. Task completion/error - final state
+
+**Example Log Output:**
+```
+[Task start] RAM: 4096MB / 16384MB (25.0%)
+[Task start] VRAM (GPU 0): 2048MB / 8192MB (25.0%) | GPU Utilization: 15.0%
+[After model initialization] VRAM (GPU 0): 3500MB / 8192MB (42.7%)
+[Before transcription] RAM: 4200MB / 16384MB (25.6%)
+[After transcription] VRAM (GPU 0): 4096MB / 8192MB (50.0%)
+[Task completed successfully] RAM: 4100MB / 16384MB (25.0%)
+```
+
+**OOM Prevention:**
+- Warnings logged when thresholds exceeded
+- Helps identify memory-hungry tasks
+- Enables proactive scaling decisions
+- Assists in debugging memory issues
+
 #### Monitoring Celery Tasks
 
 ```bash
@@ -417,21 +544,54 @@ celery -A app.celery_app purge
 
 ### Configuration
 
-Required environment variables:
+#### Required Environment Variables
+
+**Database & Cache:**
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
+- `REDIS_QUEUE_DB`: Redis database for Celery queue (default: `2`)
+
+**Storage:**
 - `STORAGE_ROOT`: Root directory for file storage (default: `/storage`)
   - Uploads directory: `${STORAGE_ROOT}/uploads/`
   - Results directory: `${STORAGE_ROOT}/results/`
-- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
-- `REDIS_QUEUE_DB`: Redis database for Celery queue (default: `2`)
-- `DATABASE_URL`: PostgreSQL connection string
+  - Models directory: `${STORAGE_ROOT}/models/`
+
+**Worker Configuration:**
+- `WORKER_CONCURRENCY`: Number of concurrent worker processes (default: `2`)
+  - See "Worker Concurrency Guidelines" section for selection guidance
+- `WORKER_QUEUE`: Queue name(s) to process (default: `media`)
+- `WORKER_LOG_LEVEL`: Logging level (default: `info`)
+- `WORKER_MAX_TASKS_PER_CHILD`: Max tasks before worker restart (default: `100`)
+
+**Model Configuration (Singleton Pattern):**
+- `MODEL_DEVICE`: Computing device (default: `cuda`)
+  - Options: `cuda`, `cpu`
+- `MODEL_DEVICE_INDEX`: GPU index for multi-GPU systems (default: `0`)
+  - For GPU 0: `0`, GPU 1: `1`, etc.
+- `MODEL_COMPUTE_TYPE`: Computation precision (default: `float16`)
+  - Options: `float16` (faster, less memory), `int8` (smallest), `float32` (highest quality)
+- `MODEL_NAME`: Model size (default: `base`)
+  - Options: `tiny`, `base`, `small`, `medium`, `large`
+  - Larger models = better quality but more memory and slower
+
+**Resource Monitoring:**
+- `ENABLE_RESOURCE_MONITORING`: Enable VRAM/RAM monitoring (default: `true`)
+  - Set to `false` to disable monitoring overhead
+- `VRAM_WARNING_THRESHOLD`: VRAM usage threshold for warnings (default: `0.85`)
+  - Value between 0.0 and 1.0 (0.85 = 85%)
+- `RAM_WARNING_THRESHOLD`: RAM usage threshold for warnings (default: `0.90`)
+  - Value between 0.0 and 1.0 (0.90 = 90%)
 
 **Storage Directory Structure:**
 ```
 /storage/
 ├── uploads/          # Uploaded audio files
 │   └── {filename}    # Original uploaded files
-└── results/          # Processing results
-    └── {task_id}_transcription.json  # Transcription results
+├── results/          # Processing results
+│   └── {task_id}_transcription.json  # Transcription results
+└── models/           # Downloaded ML models
+    └── {model_name}  # Cached model files
 ```
 
 ## Dependencies
