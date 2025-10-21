@@ -20,6 +20,8 @@ worker/.env
 worker/.env.local
 worker/.env.development
 worker/.env.production
+infrastructure/.env
+infrastructure/docker-compose.override.yml
 
 # Dependencies
 node_modules/

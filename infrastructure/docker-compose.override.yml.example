@@ -1,0 +1,108 @@
+# =============================================================================
+# Docker Compose Override Example
+# =============================================================================
+# این فایل برای override کردن تنظیمات docker-compose.yml در محیط Development
+# 
+# استفاده:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   # سپس ویرایش کنید
+#
+# Docker Compose به‌صورت خودکار این فایل را می‌خواند
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # Override برای محیط Development
+  
+  backend:
+    # در Development از build کنید به جای image از registry
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+      target: development
+    
+    # Mount کردن کد برای hot reload
+    volumes:
+      - ../backend:/workspace/backend
+      - /workspace/backend/node_modules  # جلوگیری از override شدن node_modules
+      - /storage:/storage
+    
+    # در Development پورت را expose کنید
+    ports:
+      - "8000:8000"
+      - "9229:9229"  # Debug port
+    
+    # متغیرهای Development
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    
+    # دستور اجرا با nodemon برای hot reload
+    command: npm run dev
+  
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
+      target: development
+    
+    volumes:
+      - ../frontend:/workspace/frontend
+      - /workspace/frontend/node_modules
+    
+    ports:
+      - "3000:3000"
+    
+    environment:
+      NODE_ENV: development
+    
+    command: npm run dev
+  
+  worker:
+    build:
+      context: ../worker
+      dockerfile: Dockerfile.dev
+      target: development
+    
+    volumes:
+      - ../worker:/workspace/worker
+      - /workspace/worker/node_modules
+      - /storage:/storage
+    
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+    
+    command: npm run dev
+  
+  # برای Development ممکن است بخواهید PostgreSQL port را expose کنید
+  postgres:
+    ports:
+      - "5432:5432"
+  
+  # برای Development ممکن است بخواهید Redis port را expose کنید
+  redis:
+    ports:
+      - "6379:6379"
+
+# =============================================================================
+# یا برای Production می‌توانید تنظیمات دیگری override کنید:
+# =============================================================================
+#
+# services:
+#   backend:
+#     image: your-registry.com/app-backend:v1.2.3
+#     deploy:
+#       replicas: 3
+#       resources:
+#         limits:
+#           cpus: '4'
+#           memory: 4G
+#
+#   worker:
+#     image: your-registry.com/app-worker:v1.2.3
+#     deploy:
+#       replicas: 5
+#
+# =============================================================================
