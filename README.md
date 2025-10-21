@@ -268,17 +268,106 @@ When a file is uploaded with a task, the system:
 
 The background worker processes the file and updates the task status to `COMPLETED` or `CANCELLED` on error.
 
-#### Starting Celery Worker
+#### Celery Configuration
+
+The Celery application is configured with:
+- **Broker**: Redis (database 2 by default)
+- **Result Backend**: Redis (same as broker)
+- **Serialization**: JSON format for security and compatibility
+- **Timezone**: UTC (matching database timezone)
+- **Task Routing**: Different queues for media and default tasks
+- **Result Expiration**: 1 hour
+- **Connection Retry**: Automatic retry on connection failures
+
+#### Available Task Wrappers
+
+The application provides several task wrappers for background processing:
+
+##### 1. Audio Transcription
+```python
+from app.tasks import transcribe_audio
+
+# Queue audio transcription task
+result = transcribe_audio.delay(task_id="uuid-string", audio_file_path="/path/to/audio.mp3")
+```
+
+Features:
+- Speech-to-text conversion
+- Language detection (supports Persian/Farsi)
+- Confidence scoring
+- Duration calculation
+
+##### 2. Video Processing
+```python
+from app.tasks import process_video
+
+# Queue video processing task
+result = process_video.delay(task_id="uuid-string", video_file_path="/path/to/video.mp4")
+```
+
+Features:
+- Thumbnail generation
+- Format conversion
+- Metadata extraction
+- Resolution detection
+
+##### 3. Text Analysis
+```python
+from app.tasks import analyze_text
+
+# Queue text analysis task
+result = analyze_text.delay(task_id="uuid-string", text_content="متن برای تحلیل")
+```
+
+Features:
+- Sentiment analysis
+- Keyword extraction
+- Language detection
+- Content summarization
+
+##### 4. File Processing (Generic)
+```python
+from app.tasks import process_task_file
+
+# Queue generic file processing task
+result = process_task_file.delay(task_id="uuid-string", file_path="/path/to/file")
+```
+
+#### Starting Celery Workers
 
 ```bash
 cd backend
 
 # Set environment variables
 export REDIS_URL=redis://localhost:6379
+export REDIS_QUEUE_DB=2
 export STORAGE_ROOT=/var/app/storage
+export DATABASE_URL=postgresql://user:password@localhost:5432/writers_db
 
-# Start Celery worker
-celery -A app.celery_app worker --loglevel=info
+# Start default queue worker
+celery -A app.celery_app worker --loglevel=info -Q default
+
+# Start media queue worker (for audio/video processing)
+celery -A app.celery_app worker --loglevel=info -Q media
+
+# Start worker for all queues
+celery -A app.celery_app worker --loglevel=info -Q default,media
+```
+
+#### Monitoring Celery Tasks
+
+```bash
+# Monitor Celery events in real-time
+celery -A app.celery_app events
+
+# Check worker status
+celery -A app.celery_app inspect active
+
+# Check registered tasks
+celery -A app.celery_app inspect registered
+
+# Purge all tasks from queue
+celery -A app.celery_app purge
 ```
 
 ### Configuration
@@ -287,6 +376,7 @@ Required environment variables:
 - `STORAGE_ROOT`: Root directory for file storage (default: `/var/app/storage`)
 - `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
 - `REDIS_QUEUE_DB`: Redis database for Celery queue (default: `2`)
+- `DATABASE_URL`: PostgreSQL connection string
 
 ## Dependencies
 
