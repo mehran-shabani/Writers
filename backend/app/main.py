@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .auth.router import router as auth_router
+from .routers.tasks import router as tasks_router
 
 app = FastAPI(
     title="Writers API",
@@ -20,6 +21,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(tasks_router)
 
 
 @app.get("/")

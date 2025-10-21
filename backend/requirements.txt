@@ -11,3 +11,6 @@ passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 pytest==7.4.3
 httpx==0.25.2
+celery==5.3.4
+redis==5.0.1
+python-multipart==0.0.6
