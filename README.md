@@ -112,6 +112,101 @@ backend/
 └── requirements.txt       # Python dependencies
 ```
 
+## Authentication
+
+The application implements JWT-based authentication with httpOnly cookies for secure token storage.
+
+### Authentication Features
+
+- User registration with email and username validation
+- Secure password hashing using bcrypt (via passlib)
+- JWT tokens with `python-jose`
+  - Short-term access tokens (30 minutes)
+  - Long-term refresh tokens (7 days)
+- HttpOnly cookies for secure token storage
+- Protected route authentication via dependency injection
+
+### Auth Endpoints
+
+#### Register
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "username": "username",
+  "password": "securepassword123",
+  "full_name": "Full Name" (optional)
+}
+```
+
+Returns user data and sets httpOnly cookies with access and refresh tokens.
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+```
+
+Returns user data and sets httpOnly cookies with access and refresh tokens.
+
+#### Logout
+```http
+POST /auth/logout
+```
+
+Clears authentication cookies.
+
+### Using Authentication
+
+To protect routes, use the `get_current_user` or `get_current_active_user` dependency:
+
+```python
+from fastapi import Depends
+from app.auth.dependencies import get_current_user
+from app.models.user import User
+
+@app.get("/protected")
+async def protected_route(current_user: User = Depends(get_current_user)):
+    return {"user": current_user.email}
+```
+
+### Authentication Module Structure
+
+```
+backend/app/auth/
+├── __init__.py           # Module exports
+├── router.py            # Auth routes (register, login, logout)
+├── jwt.py               # JWT token creation and validation
+├── dependencies.py      # Authentication dependencies
+├── schemas.py           # Pydantic models for requests/responses
+└── utils.py             # Password hashing utilities
+```
+
+### Running Tests
+
+```bash
+cd backend
+
+# Install test dependencies
+pip install -r requirements.txt
+
+# Run all tests
+pytest
+
+# Run auth tests only
+pytest tests/auth/
+
+# Run with coverage
+pytest --cov=app tests/
+```
+
 ## Dependencies
 
 - **FastAPI**: Modern web framework
@@ -119,3 +214,6 @@ backend/
 - **Alembic**: Database migration tool
 - **PostgreSQL**: Database (via psycopg2-binary)
 - **Uvicorn**: ASGI server
+- **Passlib**: Password hashing with bcrypt
+- **Python-JOSE**: JWT token handling
+- **Pytest**: Testing framework
