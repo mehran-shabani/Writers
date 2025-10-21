@@ -23,10 +23,12 @@ The application uses SQLModel (combination of SQLAlchemy and Pydantic) for datab
 - **id**: UUID (Primary Key)
 - **title**: String
 - **description**: String (Optional)
-- **status**: Enum (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
+- **status**: Enum (PENDING, PROCESSING, IN_PROGRESS, COMPLETED, FAILED, CANCELLED)
 - **user_id**: UUID (Foreign Key to users)
 - **file_path**: String (Optional) - مسیر فایل آپلود شده
+- **result_path**: String (Optional) - مسیر فایل نتیجه پردازش
 - **due_date**: DateTime (Optional)
+- **completed_at**: DateTime (Optional) - زمان تکمیل task
 - **created_at**: DateTime (Auto-generated)
 - **updated_at**: DateTime (Auto-generated)
 
@@ -99,7 +101,8 @@ backend/
 ├── alembic/                 # Database migrations
 │   ├── versions/           # Migration scripts
 │   │   ├── 001_initial_migration.py
-│   │   └── 002_add_file_path_to_tasks.py
+│   │   ├── 002_add_file_path_to_tasks.py
+│   │   └── 003_add_processing_status_and_result_fields.py
 │   ├── env.py             # Alembic environment
 │   └── script.py.mako     # Migration template
 ├── app/
@@ -118,6 +121,11 @@ backend/
 │   └── main.py            # Application entry point
 ├── alembic.ini            # Alembic configuration
 └── requirements.txt       # Python dependencies
+
+worker/
+├── __init__.py            # Worker module initialization
+├── tasks.py               # Audio transcription worker tasks
+└── requirements.txt       # Worker dependencies
 ```
 
 ## Authentication
@@ -285,17 +293,28 @@ The application provides several task wrappers for background processing:
 
 ##### 1. Audio Transcription
 ```python
-from app.tasks import transcribe_audio
+from worker.tasks import transcribe_audio
 
 # Queue audio transcription task
-result = transcribe_audio.delay(task_id="uuid-string", audio_file_path="/path/to/audio.mp3")
+result = transcribe_audio.delay(task_id="uuid-string", audio_file_path="audio.mp3")
 ```
 
 Features:
-- Speech-to-text conversion
+- Updates task status to PROCESSING during execution
+- Reads audio file from `/storage/uploads/`
+- Performs speech-to-text conversion
+- Saves transcription result to `/storage/results/`
+- Updates database with result_path, completed_at, and status=COMPLETED
+- On error, sets status=FAILED with proper logging
 - Language detection (supports Persian/Farsi)
 - Confidence scoring
 - Duration calculation
+
+Implementation details:
+- File reading: Audio file is read from `/storage/uploads/` directory
+- Result storage: JSON result is saved to `/storage/results/{task_id}_transcription.json`
+- Database updates: Automatic status tracking (PROCESSING → COMPLETED/FAILED)
+- Error handling: Comprehensive error logging and status updates
 
 ##### 2. Video Processing
 ```python
@@ -336,22 +355,48 @@ result = process_task_file.delay(task_id="uuid-string", file_path="/path/to/file
 #### Starting Celery Workers
 
 ```bash
-cd backend
-
 # Set environment variables
 export REDIS_URL=redis://localhost:6379
 export REDIS_QUEUE_DB=2
-export STORAGE_ROOT=/var/app/storage
+export STORAGE_ROOT=/storage
 export DATABASE_URL=postgresql://user:password@localhost:5432/writers_db
 
-# Start default queue worker
+# Start default queue worker (from backend directory)
+cd backend
 celery -A app.celery_app worker --loglevel=info -Q default
 
 # Start media queue worker (for audio/video processing)
+cd backend
 celery -A app.celery_app worker --loglevel=info -Q media
 
 # Start worker for all queues
+cd backend
 celery -A app.celery_app worker --loglevel=info -Q default,media
+```
+
+#### Worker Directory
+
+The `worker/` directory contains dedicated worker tasks for audio processing:
+
+**Structure:**
+- `worker/tasks.py`: Audio transcription task implementation
+- `worker/requirements.txt`: Worker-specific dependencies
+
+**Features:**
+- Access to shared code (Pydantic models from `backend/app/models/`)
+- Imports Celery configuration from `backend/app/celery_app.py`
+- Proper database status tracking (PROCESSING, COMPLETED, FAILED)
+- File handling from `/storage/uploads/` and `/storage/results/`
+- Comprehensive error logging and handling
+
+**Running Worker Tasks:**
+```bash
+# Ensure worker can access backend modules
+export PYTHONPATH=/workspace:$PYTHONPATH
+
+# Start worker from backend directory
+cd backend
+celery -A app.celery_app worker --loglevel=info -Q media
 ```
 
 #### Monitoring Celery Tasks
@@ -373,10 +418,21 @@ celery -A app.celery_app purge
 ### Configuration
 
 Required environment variables:
-- `STORAGE_ROOT`: Root directory for file storage (default: `/var/app/storage`)
+- `STORAGE_ROOT`: Root directory for file storage (default: `/storage`)
+  - Uploads directory: `${STORAGE_ROOT}/uploads/`
+  - Results directory: `${STORAGE_ROOT}/results/`
 - `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
 - `REDIS_QUEUE_DB`: Redis database for Celery queue (default: `2`)
 - `DATABASE_URL`: PostgreSQL connection string
+
+**Storage Directory Structure:**
+```
+/storage/
+├── uploads/          # Uploaded audio files
+│   └── {filename}    # Original uploaded files
+└── results/          # Processing results
+    └── {task_id}_transcription.json  # Transcription results
+```
 
 ## Dependencies
 

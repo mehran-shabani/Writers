@@ -14,7 +14,7 @@ celery_app = Celery(
     "writers_tasks",
     broker=broker_url,
     backend=result_backend,
-    include=["app.tasks"]
+    include=["app.tasks", "worker.tasks"]
 )
 
 # Celery configuration
