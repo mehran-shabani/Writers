@@ -1,8 +1,17 @@
-# Infrastructure Setup Scripts
+# Infrastructure Setup & Deployment
 
-این پوشه شامل اسکریپت‌های Shell برای راه‌اندازی و پیکربندی زیرساخت‌های سرور است.
+این پوشه شامل اسکریپت‌های راه‌اندازی زیرساخت و فایل‌های استقرار اپلیکیشن است.
 
-## اسکریپت‌های موجود
+## 📁 محتویات
+
+### فایل‌های استقرار
+- **`docker-compose.yml`**: پیکربندی Docker Compose برای تمام سرویس‌ها
+- **`.env.docker`**: نمونه متغیرهای محیطی برای Docker Compose
+- **`docker-compose.override.yml.example`**: نمونه override برای محیط Development
+- **`DEPLOYMENT.md`**: راهنمای کامل استقرار (Docker Compose + systemd)
+- **`SYSTEMD_SERVICES.md`**: راهنمای جزئیات سرویس‌های systemd
+
+### اسکریپت‌های راه‌اندازی زیرساخت
 
 ### 1. PostgreSQL Setup (`setup_postgresql.sh`)
 
@@ -166,3 +175,65 @@ cat /etc/fstab | grep storage
 - PostgreSQL config: `postgresql.conf.backup`
 - Redis config: `redis.conf.backup.YYYYMMDD_HHMMSS`
 - fstab: `fstab.backup.YYYYMMDD_HHMMSS`
+
+---
+
+## 🚀 استقرار اپلیکیشن
+
+برای استقرار کامل اپلیکیشن، دو روش در دسترس است:
+
+### روش 1: استقرار با Docker Compose (توصیه شده)
+
+```bash
+# 1. آماده‌سازی محیط
+cd /workspace/infrastructure
+cp .env.docker .env
+nano .env  # ویرایش و تنظیم رمزها
+
+# 2. راه‌اندازی زیرساخت (اگر هنوز انجام نشده)
+sudo ./setup_postgresql.sh
+sudo ./setup_redis.sh
+sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh
+
+# 3. اجرای سرویس‌ها
+docker compose up -d
+
+# 4. بررسی وضعیت
+docker compose ps
+docker compose logs -f
+```
+
+### روش 2: استقرار مستقیم با systemd
+
+```bash
+# 1. نصب وابستگی‌ها
+sudo ./setup_postgresql.sh
+sudo ./setup_redis.sh
+sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh
+
+# 2. Build اپلیکیشن
+cd /workspace/backend && npm install && npm run build
+cd /workspace/frontend && npm install && npm run build
+cd /workspace/worker && npm install && npm run build
+
+# 3. نصب سرویس‌های systemd (مراجعه به SYSTEMD_SERVICES.md)
+sudo nano /etc/systemd/system/app-backend.service
+sudo nano /etc/systemd/system/app-frontend.service
+sudo nano /etc/systemd/system/app-worker.service
+
+# 4. فعال‌سازی و شروع
+sudo systemctl daemon-reload
+sudo systemctl enable app-backend.service app-frontend.service app-worker.service
+sudo systemctl start app-backend.service app-frontend.service app-worker.service
+```
+
+**📖 مستندات کامل**: برای جزئیات بیشتر، فایل **[DEPLOYMENT.md](DEPLOYMENT.md)** را مطالعه کنید.
+
+---
+
+## 📚 مستندات مرتبط
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: راهنمای کامل استقرار با هر دو روش
+- **[SYSTEMD_SERVICES.md](SYSTEMD_SERVICES.md)**: جزئیات کامل سرویس‌های systemd
+- **[../ENV_SETUP.md](../ENV_SETUP.md)**: راهنمای پیکربندی متغیرهای محیطی
+- **[../.env.example](../.env.example)**: نمونه متغیرهای محیطی سراسری

@@ -1,0 +1,366 @@
+# =============================================================================
+# Docker Compose Configuration for Production Deployment
+# =============================================================================
+# این فایل شامل تمام سرویس‌های مورد نیاز برای اجرای اپلیکیشن است:
+# - Frontend: رابط کاربری وب
+# - Backend: API سرور
+# - Worker: پردازش‌گر Job های پس‌زمینه
+# - PostgreSQL: پایگاه داده اصلی
+# - Redis: Cache و Queue Manager
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database Service
+  # ---------------------------------------------------------------------------
+  # پایگاه داده اصلی با استفاده از SSD برای عملکرد بهینه
+  postgres:
+    image: postgres:15-alpine
+    container_name: app-postgres
+    restart: unless-stopped
+    
+    # پورت‌ها - فقط در صورت نیاز به دسترسی خارجی uncomment کنید
+    # ports:
+    #   - "5432:5432"
+    
+    # متغیرهای محیطی پایگاه داده
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-myapp_db}
+      POSTGRES_USER: ${POSTGRES_USER:-myapp_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      # تنظیمات بهینه‌سازی PostgreSQL
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-100}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    
+    # Volume های داده - ماندگاری داده‌ها
+    volumes:
+      # دایرکتوری اصلی داده PostgreSQL روی SSD
+      - postgres_data:/var/lib/postgresql/data
+      # فایل‌های پیکربندی سفارشی (اختیاری)
+      # - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      # - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      # اسکریپت‌های مقداردهی اولیه (اختیاری)
+      # - ./postgres/init-scripts:/docker-entrypoint-initdb.d:ro
+    
+    # Health check برای اطمینان از آماده بودن سرویس
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myapp_user} -d ${POSTGRES_DB:-myapp_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    # تنظیمات شبکه
+    networks:
+      - app-network
+    
+    # محدودیت منابع (اختیاری - برای جلوگیری از استفاده بیش از حد منابع)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache & Queue Service
+  # ---------------------------------------------------------------------------
+  # سرویس Cache و مدیریت صف Job ها
+  redis:
+    image: redis:7-alpine
+    container_name: app-redis
+    restart: unless-stopped
+    
+    # دستور اجرا با تنظیمات امنیتی
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    
+    # پورت‌ها - فقط در صورت نیاز به دسترسی خارجی uncomment کنید
+    # ports:
+    #   - "6379:6379"
+    
+    # Volume های داده برای ماندگاری
+    volumes:
+      - redis_data:/data
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    
+    networks:
+      - app-network
+    
+    # محدودیت منابع
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Backend API Service
+  # ---------------------------------------------------------------------------
+  # سرور API اصلی
+  backend:
+    # می‌توانید از image از Docker registry استفاده کنید یا build کنید
+    # image: your-registry.com/app-backend:latest
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+    
+    container_name: app-backend
+    restart: unless-stopped
+    
+    # پورت‌های سرویس
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    
+    # بارگذاری متغیرهای محیطی
+    env_file:
+      - ../.env                    # متغیرهای سراسری
+      - ../backend/.env            # متغیرهای اختصاصی backend
+    
+    # متغیرهای محیطی اضافی
+    environment:
+      # اتصال به سرویس‌ها در Docker network
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/${REDIS_CACHE_DB:-0}
+      # مسیر ذخیره‌سازی
+      STORAGE_ROOT: /storage
+      NODE_ENV: ${NODE_ENV:-production}
+    
+    # Volume ها
+    volumes:
+      # دسترسی به فضای ذخیره‌سازی اصلی (100TB)
+      - /storage:/storage
+      # لاگ‌ها (اختیاری)
+      - backend_logs:/var/log/app
+      # فایل‌های آپلود موقت
+      - backend_uploads:/tmp/uploads
+    
+    # وابستگی‌ها - منتظر آماده شدن سرویس‌های دیگر
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - app-network
+    
+    # محدودیت منابع
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+
+  # ---------------------------------------------------------------------------
+  # Worker Service
+  # ---------------------------------------------------------------------------
+  # پردازش‌گر Job های پس‌زمینه
+  worker:
+    # image: your-registry.com/app-worker:latest
+    build:
+      context: ../worker
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+    
+    container_name: app-worker
+    restart: unless-stopped
+    
+    # بارگذاری متغیرهای محیطی
+    env_file:
+      - ../.env                    # متغیرهای سراسری
+      - ../worker/.env             # متغیرهای اختصاصی worker
+    
+    # متغیرهای محیطی اضافی
+    environment:
+      # اتصال به سرویس‌ها
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/${REDIS_QUEUE_DB:-2}
+      # مسیر ذخیره‌سازی
+      STORAGE_ROOT: /storage
+      NODE_ENV: ${NODE_ENV:-production}
+      # تنظیمات Worker
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      WORKER_MAX_RETRIES: ${WORKER_MAX_RETRIES:-3}
+    
+    # Volume ها
+    volumes:
+      # دسترسی به فضای ذخیره‌سازی برای پردازش فایل‌ها
+      - /storage:/storage
+      # لاگ‌ها
+      - worker_logs:/var/log/app
+    
+    # وابستگی‌ها
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    
+    # Health check (اختیاری - بستگی به پیاده‌سازی دارد)
+    # healthcheck:
+    #   test: ["CMD", "node", "healthcheck.js"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    
+    networks:
+      - app-network
+    
+    # محدودیت منابع
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4'
+    #       memory: 4G
+    #   replicas: 2  # می‌توانید چند instance از worker اجرا کنید
+
+  # ---------------------------------------------------------------------------
+  # Frontend Service
+  # ---------------------------------------------------------------------------
+  # رابط کاربری وب
+  frontend:
+    # image: your-registry.com/app-frontend:latest
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    
+    container_name: app-frontend
+    restart: unless-stopped
+    
+    # پورت‌های سرویس
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    
+    # بارگذاری متغیرهای محیطی
+    env_file:
+      - ../.env                    # متغیرهای سراسری
+      - ../frontend/.env.local     # متغیرهای اختصاصی frontend
+    
+    # متغیرهای محیطی اضافی
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_APP_URL: ${APP_URL:-http://localhost:3000}
+    
+    # Volume ها (در صورت نیاز)
+    volumes:
+      # لاگ‌ها
+      - frontend_logs:/var/log/app
+      # فایل‌های استاتیک (اگر به صورت داینامیک تولید می‌شوند)
+      # - frontend_static:/app/.next/static
+    
+    # وابستگی‌ها
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    networks:
+      - app-network
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  app-network:
+    driver: bridge
+    name: app-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+# Volume های داده برای ماندگاری اطلاعات
+volumes:
+  # PostgreSQL data - ذخیره روی SSD برای عملکرد بهتر
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      # مسیر SSD - مطابق با اسکریپت setup_postgresql.sh
+      device: ${SSD_MOUNT_POINT:-/mnt/ssd}/postgresql/data
+  
+  # Redis data
+  redis_data:
+    driver: local
+  
+  # Application logs
+  backend_logs:
+    driver: local
+  
+  worker_logs:
+    driver: local
+  
+  frontend_logs:
+    driver: local
+  
+  # Temporary uploads
+  backend_uploads:
+    driver: local
+
+# =============================================================================
+# توضیحات استفاده
+# =============================================================================
+#
+# راه‌اندازی سرویس‌ها:
+#   docker-compose -f infrastructure/docker-compose.yml up -d
+#
+# مشاهده لاگ‌ها:
+#   docker-compose -f infrastructure/docker-compose.yml logs -f [service_name]
+#
+# متوقف کردن سرویس‌ها:
+#   docker-compose -f infrastructure/docker-compose.yml down
+#
+# متوقف کردن با حذف volume ها (خطرناک!):
+#   docker-compose -f infrastructure/docker-compose.yml down -v
+#
+# ری‌استارت یک سرویس خاص:
+#   docker-compose -f infrastructure/docker-compose.yml restart backend
+#
+# Scale کردن worker:
+#   docker-compose -f infrastructure/docker-compose.yml up -d --scale worker=3
+#
+# =============================================================================
