@@ -23,6 +23,7 @@ class Task(SQLModel, table=True):
         sa_column=Column(SQLAlchemyEnum(TaskStatus), default=TaskStatus.PENDING)
     )
     user_id: UUID = Field(foreign_key="users.id", index=True)
+    file_path: Optional[str] = Field(default=None, max_length=500)
     due_date: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

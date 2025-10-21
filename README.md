@@ -25,6 +25,7 @@ The application uses SQLModel (combination of SQLAlchemy and Pydantic) for datab
 - **description**: String (Optional)
 - **status**: Enum (PENDING, IN_PROGRESS, COMPLETED, CANCELLED)
 - **user_id**: UUID (Foreign Key to users)
+- **file_path**: String (Optional) - مسیر فایل آپلود شده
 - **due_date**: DateTime (Optional)
 - **created_at**: DateTime (Auto-generated)
 - **updated_at**: DateTime (Auto-generated)
@@ -97,7 +98,8 @@ postgresql://user:password@localhost:5432/writers_db
 backend/
 ├── alembic/                 # Database migrations
 │   ├── versions/           # Migration scripts
-│   │   └── 001_initial_migration.py
+│   │   ├── 001_initial_migration.py
+│   │   └── 002_add_file_path_to_tasks.py
 │   ├── env.py             # Alembic environment
 │   └── script.py.mako     # Migration template
 ├── app/
@@ -105,9 +107,15 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── user.py        # User model
 │   │   └── task.py        # Task model
-│   ├── api/               # API routes
+│   ├── routers/           # API routes
+│   │   ├── __init__.py
+│   │   ├── tasks.py       # Task endpoints
+│   │   └── schemas.py     # Task request/response schemas
+│   ├── auth/              # Authentication module
+│   ├── celery_app.py      # Celery configuration
+│   ├── tasks.py           # Background tasks
 │   ├── db.py              # Database configuration
-│   └── __init__.py
+│   └── main.py            # Application entry point
 ├── alembic.ini            # Alembic configuration
 └── requirements.txt       # Python dependencies
 ```
@@ -207,6 +215,79 @@ pytest tests/auth/
 pytest --cov=app tests/
 ```
 
+## Task Management API
+
+The application provides endpoints for managing tasks with file upload capabilities.
+
+### Task Endpoints
+
+#### Create Task with File Upload
+```http
+POST /api/v1/tasks
+Content-Type: multipart/form-data
+Authentication: Required (Cookie: access_token)
+
+Form Data:
+- title: string (required)
+- description: string (optional)
+- due_date: datetime (optional)
+- file: file (optional)
+```
+
+Returns `202 Accepted` and creates a background job to process the uploaded file. The file is stored in `STORAGE_ROOT/uploads/` directory.
+
+#### Get All Tasks
+```http
+GET /api/v1/tasks?skip=0&limit=100&status_filter=PENDING
+Authentication: Required (Cookie: access_token)
+
+Query Parameters:
+- skip: int (default: 0) - Number of records to skip
+- limit: int (default: 100) - Maximum number of records
+- status_filter: TaskStatus (optional) - Filter by status
+```
+
+Returns list of tasks for the authenticated user.
+
+#### Get Task by ID
+```http
+GET /api/v1/tasks/{task_id}
+Authentication: Required (Cookie: access_token)
+```
+
+Returns a specific task by UUID. Returns `403 Forbidden` if the task doesn't belong to the authenticated user.
+
+### Background Processing with Celery
+
+When a file is uploaded with a task, the system:
+1. Saves the file to `STORAGE_ROOT/uploads/`
+2. Creates a task record in the database with status `PENDING`
+3. Queues a Celery background job with task ID and file path
+4. Updates the task status to `IN_PROGRESS`
+5. Returns `202 Accepted` to the client
+
+The background worker processes the file and updates the task status to `COMPLETED` or `CANCELLED` on error.
+
+#### Starting Celery Worker
+
+```bash
+cd backend
+
+# Set environment variables
+export REDIS_URL=redis://localhost:6379
+export STORAGE_ROOT=/var/app/storage
+
+# Start Celery worker
+celery -A app.celery_app worker --loglevel=info
+```
+
+### Configuration
+
+Required environment variables:
+- `STORAGE_ROOT`: Root directory for file storage (default: `/var/app/storage`)
+- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
+- `REDIS_QUEUE_DB`: Redis database for Celery queue (default: `2`)
+
 ## Dependencies
 
 - **FastAPI**: Modern web framework
@@ -216,4 +297,7 @@ pytest --cov=app tests/
 - **Uvicorn**: ASGI server
 - **Passlib**: Password hashing with bcrypt
 - **Python-JOSE**: JWT token handling
+- **Celery**: Distributed task queue for background jobs
+- **Redis**: Message broker and result backend for Celery
+- **Python-Multipart**: File upload support
 - **Pytest**: Testing framework
