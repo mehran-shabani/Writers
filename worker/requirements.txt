@@ -11,6 +11,9 @@ python-dotenv==1.0.0
 celery==5.3.4
 redis==5.0.1
 
+# Resource monitoring
+psutil==5.9.6
+
 # For future audio processing integration
 # Uncomment when implementing actual transcription
 # openai-whisper==1.0.0
