@@ -1,0 +1,1 @@
+"""Writers backend application."""
