@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import useSWR from 'swr';
 import api from '@/lib/api';
+import axios from 'axios';
 import { Task, TaskStatus } from '@/types/task';
 import { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -14,6 +15,59 @@ import jsPDF from 'jspdf';
 import './editor.css';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data);
+
+const translateErrorDetail = (detail: string) => {
+  if (!detail) return '';
+
+  if (detail === "You don't have access to this task") {
+    return 'شما دسترسی لازم به این وظیفه را ندارید.';
+  }
+
+  if (detail === 'Task not found') {
+    return 'وظیفه مورد نظر یافت نشد.';
+  }
+
+  if (detail === 'Not authenticated') {
+    return 'برای مشاهده این بخش ابتدا باید وارد شوید.';
+  }
+
+  if (detail.startsWith('Task is not completed yet')) {
+    const statusText = detail.split('Current status:')[1]?.trim();
+    return statusText
+      ? `وظیفه هنوز تکمیل نشده است. وضعیت فعلی: ${statusText}.`
+      : 'وظیفه هنوز تکمیل نشده است.';
+  }
+
+  if (detail === 'Result file not found for this task') {
+    return 'فایل نتیجه برای این وظیفه یافت نشد.';
+  }
+
+  if (detail === 'Result file not found on disk') {
+    return 'فایل نتیجه روی سرور یافت نشد.';
+  }
+
+  if (detail === 'Failed to parse result file') {
+    return 'خواندن فایل نتیجه با خطا مواجه شد.';
+  }
+
+  if (detail.startsWith('Error reading result file')) {
+    return 'خطا در خواندن فایل نتیجه. لطفاً بعداً دوباره تلاش کنید.';
+  }
+
+  return detail;
+};
+
+const getTaskErrorMessage = (status?: number, detail?: string) => {
+  if (status === 404) {
+    return 'وظیفه مورد نظر یافت نشد.';
+  }
+
+  if (detail) {
+    return translateErrorDetail(detail);
+  }
+
+  return 'خطا در بارگذاری جزئیات وظیفه. لطفاً دوباره تلاش کنید.';
+};
 
 interface TranscriptionResult {
   transcription: string;
@@ -39,6 +93,7 @@ export default function TaskDetailPage() {
   const [loadingTranscription, setLoadingTranscription] = useState(false);
   const [editorContent, setEditorContent] = useState('');
   const [isEdited, setIsEdited] = useState(false);
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   
   // Fetch task details with polling
   const { data: task, error, isLoading, mutate } = useSWR<Task>(
@@ -78,6 +133,7 @@ export default function TaskDetailPage() {
     const fetchTranscription = async () => {
       if (task?.status === TaskStatus.COMPLETED && task?.result_path) {
         setLoadingTranscription(true);
+        setTranscriptionError(null);
         try {
           // Try to fetch the transcription result file
           const response = await api.get(`/api/v1/tasks/${taskId}/result`);
@@ -85,12 +141,23 @@ export default function TaskDetailPage() {
           const text = response.data.transcription || '';
           setEditorContent(text);
           editor?.commands.setContent(`<p>${text}</p>`);
+          setIsEdited(false);
         } catch (err) {
           console.error('Failed to fetch transcription:', err);
-          // If API endpoint doesn't exist, show placeholder
-          const placeholderText = 'نتیجه رونویسی در اینجا نمایش داده خواهد شد.';
-          setEditorContent(placeholderText);
-          editor?.commands.setContent(`<p>${placeholderText}</p>`);
+          let errorMessage = 'خطا در دریافت نتیجه رونویسی. لطفاً بعداً دوباره تلاش کنید.';
+
+          if (axios.isAxiosError(err)) {
+            const detail = err.response?.data?.detail;
+            if (typeof detail === 'string' && detail) {
+              errorMessage = translateErrorDetail(detail);
+            }
+          }
+
+          setTranscriptionError(errorMessage);
+          setTranscriptionData(null);
+          setEditorContent('');
+          editor?.commands.setContent('<p></p>');
+          setIsEdited(false);
         } finally {
           setLoadingTranscription(false);
         }
@@ -252,12 +319,13 @@ export default function TaskDetailPage() {
           {error && (
             <div className="card">
               <div className="error-message">
-                {error.response?.status === 404 
-                  ? 'وظیفه مورد نظر یافت نشد.'
-                  : 'خطا در بارگذاری جزئیات وظیفه. لطفاً دوباره تلاش کنید.'}
+                <span className="error-icon">⚠️</span>
+                <span>
+                  {getTaskErrorMessage(error.response?.status, error.response?.data?.detail)}
+                </span>
               </div>
-              <button 
-                onClick={() => router.push('/dashboard')} 
+              <button
+                onClick={() => router.push('/dashboard')}
                 className="btn btn-secondary"
                 style={{ marginTop: '1rem' }}
               >
@@ -392,6 +460,11 @@ export default function TaskDetailPage() {
                     {loadingTranscription ? (
                       <div style={{ textAlign: 'center', padding: '2rem', color: '#718096' }}>
                         در حال بارگذاری متن رونویسی...
+                      </div>
+                    ) : transcriptionError ? (
+                      <div className="error-message">
+                        <span className="error-icon">⚠️</span>
+                        <span>{transcriptionError}</span>
                       </div>
                     ) : (
                       <>
