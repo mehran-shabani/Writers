@@ -191,13 +191,14 @@ def get_ram_memory_info() -> Dict[str, Any]:
         A dictionary containing details about the system's RAM usage.
     """
     mem = psutil.virtual_memory()
-    return {
+    info: Dict[str, Any] = {
         'total_mb': mem.total / (1024 * 1024),
         'used_mb': mem.used / (1024 * 1024),
         'available_mb': mem.available / (1024 * 1024),
         'percent': mem.percent,
         'usage_ratio': mem.percent / 100.0
     }
+    return info
 
 
 def log_resource_usage(context: str = ""):
