@@ -1,3 +1,7 @@
+/**
+ * @enum {string}
+ * @description Represents the status of a task.
+ */
 export enum TaskStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
@@ -7,6 +11,10 @@ export enum TaskStatus {
   CANCELLED = 'cancelled',
 }
 
+/**
+ * @interface Task
+ * @description Represents a task object.
+ */
 export interface Task {
   id: string;
   title: string;
@@ -21,6 +29,10 @@ export interface Task {
   updated_at: string;
 }
 
+/**
+ * @interface TaskListResponse
+ * @description Represents the response for a list of tasks.
+ */
 export interface TaskListResponse {
   tasks: Task[];
   total: number;

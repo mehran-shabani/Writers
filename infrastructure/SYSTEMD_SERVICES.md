@@ -1,40 +1,40 @@
-# راهنمای سرویس‌های systemd
+# systemd Service Guide
 
-این مستند شامل فایل‌های سرویس systemd برای اجرای مستقیم اپلیکیشن روی سرور است.
+This document contains systemd service files for running the application directly on a server.
 
 ---
 
-## 📋 فهرست
+## 📋 Table of Contents
 
-- [نمای کلی](#نمای-کلی)
-- [پیش‌نیازها](#پیش-نیازها)
-- [فایل‌های سرویس](#فایل-های-سرویس)
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Service Files](#service-files)
   - [Backend Service](#backend-service)
   - [Frontend Service](#frontend-service)
   - [Worker Service](#worker-service)
-- [نصب و راه‌اندازی](#نصب-و-راه-اندازی)
-- [مدیریت سرویس‌ها](#مدیریت-سرویس-ها)
-- [نکات امنیتی](#نکات-امنیتی)
+- [Installation and Setup](#installation-and-setup)
+- [Service Management](#service-management)
+- [Security Notes](#security-notes)
 
 ---
 
-## نمای کلی
+## Overview
 
-این فایل‌های سرویس systemd برای اجرای اپلیکیشن به‌صورت Native روی سرور Linux طراحی شده‌اند. هر سرویس:
+These systemd service files are designed for running the application natively on a Linux server. Each service:
 
-- به‌صورت خودکار با سیستم راه‌اندازی می‌شود
-- در صورت خطا، به‌صورت خودکار ری‌استارت می‌شود
-- دارای محدودیت منابع (CPU, Memory) است
-- دارای تنظیمات امنیتی است
-- لاگ‌ها را ذخیره می‌کند
+- Starts automatically with the system
+- Restarts automatically in case of an error
+- Has resource limits (CPU, Memory)
+- Has security settings
+- Stores logs
 
 ---
 
-## پیش‌نیازها
+## Prerequisites
 
-قبل از استفاده از این سرویس‌ها:
+Before using these services:
 
-1. **زیرساخت را راه‌اندازی کنید**:
+1. **Set up the infrastructure**:
    ```bash
    cd /workspace/infrastructure
    sudo ./setup_postgresql.sh
@@ -42,38 +42,38 @@
    sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh
    ```
 
-2. **Node.js را نصب کنید**:
+2. **Install Node.js**:
    ```bash
    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
    sudo apt-get install -y nodejs
    ```
 
-3. **اپلیکیشن را build کنید**:
+3. **Build the application**:
    ```bash
    cd /workspace/backend && npm install && npm run build
    cd /workspace/frontend && npm install && npm run build
    cd /workspace/worker && npm install && npm run build
    ```
 
-4. **دایرکتوری لاگ ایجاد کنید**:
+4. **Create a log directory**:
    ```bash
    sudo mkdir -p /var/log/app
    sudo chown www-data:www-data /var/log/app
    ```
 
-5. **فایل‌های .env را پیکربندی کنید**:
+5. **Configure the `.env` files**:
    ```bash
    cp /workspace/.env.example /workspace/.env
-   # سپس ویرایش کنید
+   # Then edit
    ```
 
 ---
 
-## فایل‌های سرویس
+## Service Files
 
 ### Backend Service
 
-**مسیر**: `/etc/systemd/system/app-backend.service`
+**Path**: `/etc/systemd/system/app-backend.service`
 
 ```ini
 [Unit]
@@ -89,35 +89,35 @@ User=www-data
 Group=www-data
 WorkingDirectory=/workspace/backend
 
-# بارگذاری متغیرهای محیطی از فایل‌ها
+# Load environment variables from files
 EnvironmentFile=/workspace/.env
 EnvironmentFile=/workspace/backend/.env
 
-# متغیرهای محیطی مستقیم
+# Direct environment variables
 Environment="NODE_ENV=production"
 Environment="POSTGRES_HOST=localhost"
 Environment="REDIS_HOST=localhost"
 Environment="PORT=8000"
 
-# دستور اجرا
-# اگر TypeScript build کرده‌اید:
+# Execution command
+# If you have built TypeScript:
 ExecStart=/usr/bin/node /workspace/backend/dist/index.js
-# اگر مستقیم از source اجرا می‌کنید:
+# If you are running directly from the source:
 # ExecStart=/usr/bin/node /workspace/backend/src/index.js
-# اگر از PM2 استفاده می‌کنید:
+# If you are using PM2:
 # ExecStart=/usr/bin/pm2 start /workspace/backend/ecosystem.config.js --no-daemon
 
-# ری‌استارت خودکار در صورت خطا
+# Automatic restart in case of an error
 Restart=always
 RestartSec=10
 StartLimitBurst=5
 
-# مدیریت لاگ
+# Log management
 StandardOutput=append:/var/log/app/backend.log
 StandardError=append:/var/log/app/backend-error.log
 SyslogIdentifier=app-backend
 
-# امنیت - Hardening
+# Security - Hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -128,7 +128,7 @@ ProtectControlGroups=true
 RestrictRealtime=true
 RestrictNamespaces=true
 
-# محدودیت منابع
+# Resource limits
 LimitNOFILE=65536
 LimitNPROC=512
 MemoryMax=2G
@@ -136,7 +136,7 @@ MemoryHigh=1536M
 CPUQuota=200%
 TasksMax=512
 
-# Timeout ها
+# Timeouts
 TimeoutStartSec=60
 TimeoutStopSec=30
 
@@ -146,7 +146,7 @@ WantedBy=multi-user.target
 
 ### Frontend Service
 
-**مسیر**: `/etc/systemd/system/app-frontend.service`
+**Path**: `/etc/systemd/system/app-frontend.service`
 
 ```ini
 [Unit]
@@ -162,33 +162,33 @@ User=www-data
 Group=www-data
 WorkingDirectory=/workspace/frontend
 
-# بارگذاری متغیرهای محیطی
+# Load environment variables
 EnvironmentFile=/workspace/.env
 EnvironmentFile=/workspace/frontend/.env.local
 
-# متغیرهای محیطی
+# Environment variables
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
 
-# دستور اجرا
-# برای Next.js:
+# Execution command
+# For Next.js:
 ExecStart=/usr/bin/npm start
-# یا اگر standalone build دارید:
+# Or if you have a standalone build:
 # ExecStart=/usr/bin/node /workspace/frontend/.next/standalone/server.js
-# برای Vite/React با serve:
+# For Vite/React with serve:
 # ExecStart=/usr/bin/npx serve -s /workspace/frontend/dist -l 3000
 
-# ری‌استارت خودکار
+# Automatic restart
 Restart=always
 RestartSec=10
 StartLimitBurst=5
 
-# مدیریت لاگ
+# Log management
 StandardOutput=append:/var/log/app/frontend.log
 StandardError=append:/var/log/app/frontend-error.log
 SyslogIdentifier=app-frontend
 
-# امنیت - Hardening
+# Security - Hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -198,14 +198,14 @@ ProtectKernelTunables=true
 ProtectControlGroups=true
 RestrictRealtime=true
 
-# محدودیت منابع
+# Resource limits
 LimitNOFILE=65536
 MemoryMax=1G
 MemoryHigh=768M
 CPUQuota=100%
 TasksMax=256
 
-# Timeout ها
+# Timeouts
 TimeoutStartSec=90
 TimeoutStopSec=30
 
@@ -215,7 +215,7 @@ WantedBy=multi-user.target
 
 ### Worker Service
 
-**مسیر**: `/etc/systemd/system/app-worker.service`
+**Path**: `/etc/systemd/system/app-worker.service`
 
 ```ini
 [Unit]
@@ -231,33 +231,33 @@ User=www-data
 Group=www-data
 WorkingDirectory=/workspace/worker
 
-# بارگذاری متغیرهای محیطی
+# Load environment variables
 EnvironmentFile=/workspace/.env
 EnvironmentFile=/workspace/worker/.env
 
-# متغیرهای محیطی
+# Environment variables
 Environment="NODE_ENV=production"
 Environment="POSTGRES_HOST=localhost"
 Environment="REDIS_HOST=localhost"
 Environment="WORKER_CONCURRENCY=5"
 Environment="WORKER_MAX_RETRIES=3"
 
-# دستور اجرا
+# Execution command
 ExecStart=/usr/bin/node /workspace/worker/dist/index.js
-# یا:
+# Or:
 # ExecStart=/usr/bin/node /workspace/worker/src/index.js
 
-# ری‌استارت خودکار
+# Automatic restart
 Restart=always
 RestartSec=10
 StartLimitBurst=5
 
-# مدیریت لاگ
+# Log management
 StandardOutput=append:/var/log/app/worker.log
 StandardError=append:/var/log/app/worker-error.log
 SyslogIdentifier=app-worker
 
-# امنیت - Hardening
+# Security - Hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -268,7 +268,7 @@ ProtectControlGroups=true
 RestrictRealtime=true
 RestrictNamespaces=true
 
-# محدودیت منابع (Worker معمولاً منابع بیشتری نیاز دارد)
+# Resource limits (Worker usually needs more resources)
 LimitNOFILE=65536
 LimitNPROC=1024
 MemoryMax=4G
@@ -276,7 +276,7 @@ MemoryHigh=3G
 CPUQuota=400%
 TasksMax=1024
 
-# Timeout ها
+# Timeouts
 TimeoutStartSec=60
 TimeoutStopSec=60
 
@@ -286,42 +286,42 @@ WantedBy=multi-user.target
 
 ---
 
-## نصب و راه‌اندازی
+## Installation and Setup
 
-### مرحله 1: کپی فایل‌های سرویس
+### Step 1: Copy Service Files
 
 ```bash
-# ایجاد فایل‌های سرویس
+# Create service files
 sudo nano /etc/systemd/system/app-backend.service
-# محتوای بالا را paste کنید
+# Paste the content above
 
 sudo nano /etc/systemd/system/app-frontend.service
-# محتوای بالا را paste کنید
+# Paste the content above
 
 sudo nano /etc/systemd/system/app-worker.service
-# محتوای بالا را paste کنید
+# Paste the content above
 ```
 
-یا می‌توانید از script استفاده کنید:
+Or you can use a script:
 
 ```bash
-# اجرای اسکریپت نصب (اگر موجود باشد)
+# Run the installation script (if it exists)
 cd /workspace/infrastructure
 sudo ./install-systemd-services.sh
 ```
 
-### مرحله 2: تنظیم مجوزها
+### Step 2: Set Permissions
 
 ```bash
-# مجوزهای فایل‌های سرویس
+# Permissions for service files
 sudo chmod 644 /etc/systemd/system/app-*.service
 
-# مجوزهای فایل‌های اپلیکیشن
+# Permissions for application files
 sudo chown -R www-data:www-data /workspace/backend
 sudo chown -R www-data:www-data /workspace/frontend
 sudo chown -R www-data:www-data /workspace/worker
 
-# مجوزهای فایل‌های .env (محافظت از اطلاعات حساس)
+# Permissions for .env files (protect sensitive information)
 sudo chmod 640 /workspace/.env
 sudo chmod 640 /workspace/backend/.env
 sudo chmod 640 /workspace/frontend/.env.local
@@ -332,43 +332,43 @@ sudo chown www-data:www-data /workspace/frontend/.env.local
 sudo chown www-data:www-data /workspace/worker/.env
 ```
 
-### مرحله 3: فعال‌سازی و شروع سرویس‌ها
+### Step 3: Enable and Start Services
 
 ```bash
-# بارگذاری مجدد systemd
+# Reload systemd
 sudo systemctl daemon-reload
 
-# فعال‌سازی برای شروع خودکار با سیستم
+# Enable to start automatically with the system
 sudo systemctl enable app-backend.service
 sudo systemctl enable app-frontend.service
 sudo systemctl enable app-worker.service
 
-# شروع سرویس‌ها
+# Start services
 sudo systemctl start app-backend.service
 sudo systemctl start app-frontend.service
 sudo systemctl start app-worker.service
 
-# بررسی وضعیت
+# Check status
 sudo systemctl status app-backend.service
 sudo systemctl status app-frontend.service
 sudo systemctl status app-worker.service
 ```
 
-### مرحله 4: تست و بررسی
+### Step 4: Test and Check
 
 ```bash
-# تست Backend API
+# Test Backend API
 curl http://localhost:8000/health
 
-# تست Frontend
+# Test Frontend
 curl http://localhost:3000
 
-# بررسی لاگ‌ها
+# Check logs
 sudo journalctl -u app-backend.service -f
 sudo journalctl -u app-frontend.service -f
 sudo journalctl -u app-worker.service -f
 
-# یا لاگ‌های فایل
+# Or file logs
 tail -f /var/log/app/backend.log
 tail -f /var/log/app/frontend.log
 tail -f /var/log/app/worker.log
@@ -376,132 +376,132 @@ tail -f /var/log/app/worker.log
 
 ---
 
-## مدیریت سرویس‌ها
+## Service Management
 
-### دستورات اصلی
+### Main Commands
 
 ```bash
-# شروع سرویس
+# Start a service
 sudo systemctl start app-backend.service
 
-# متوقف کردن
+# Stop
 sudo systemctl stop app-backend.service
 
-# ری‌استارت
+# Restart
 sudo systemctl restart app-backend.service
 
-# Reload (اگر سرویس از SIGHUP پشتیبانی می‌کند)
+# Reload (if the service supports SIGHUP)
 sudo systemctl reload app-backend.service
 
-# بررسی وضعیت
+# Check status
 sudo systemctl status app-backend.service
 
-# فعال‌سازی (شروع خودکار با سیستم)
+# Enable (start automatically with the system)
 sudo systemctl enable app-backend.service
 
-# غیرفعال‌سازی
+# Disable
 sudo systemctl disable app-backend.service
 
-# مشاهده لاگ
+# View log
 sudo journalctl -u app-backend.service
 
-# مشاهده لاگ real-time
+# View real-time log
 sudo journalctl -u app-backend.service -f
 
-# مشاهده 100 خط آخر لاگ
+# View the last 100 lines of the log
 sudo journalctl -u app-backend.service -n 100
 
-# لاگ‌های امروز
+# Logs from today
 sudo journalctl -u app-backend.service --since today
 
-# لاگ‌های یک ساعت گذشته
+# Logs from the last hour
 sudo journalctl -u app-backend.service --since "1 hour ago"
 ```
 
-### مدیریت همه سرویس‌ها به‌صورت یکجا
+### Managing All Services at Once
 
 ```bash
-# شروع همه سرویس‌ها
+# Start all services
 sudo systemctl start app-backend.service app-frontend.service app-worker.service
 
-# ری‌استارت همه
+# Restart all
 sudo systemctl restart app-backend.service app-frontend.service app-worker.service
 
-# وضعیت همه
+# Status of all
 systemctl status 'app-*'
 
-# لیست تمام سرویس‌های اپلیکیشن
+# List all application services
 systemctl list-units --type=service | grep app-
 ```
 
-### مشاهده منابع مصرفی
+### Viewing Resource Consumption
 
 ```bash
-# منابع استفاده شده توسط سرویس
+# Resources used by the service
 systemd-cgtop
 
-# جزئیات یک سرویس خاص
+# Details of a specific service
 systemctl show app-backend.service --property=CPUUsageNSec,MemoryCurrent
 
-# وضعیت دقیق
+# Detailed status
 systemctl status app-backend.service -l --no-pager
 ```
 
 ---
 
-## نکات امنیتی
+## Security Notes
 
-### Hardening Options در فایل‌های سرویس
+### Hardening Options in Service Files
 
-فایل‌های سرویس بالا شامل تنظیمات امنیتی زیر هستند:
+The service files above include the following security settings:
 
 1. **NoNewPrivileges=true**
-   - جلوگیری از افزایش مجوزها
+   - Prevents privilege escalation
 
 2. **PrivateTmp=true**
-   - دایرکتوری `/tmp` مجزا برای هر سرویس
+   - Separate `/tmp` directory for each service
 
 3. **ProtectSystem=strict**
-   - فقط مسیرهای مشخص شده قابل نوشتن هستند
+   - Only specified paths are writable
 
 4. **ProtectHome=true**
-   - دسترسی به دایرکتوری‌های home محافظت شده
+   - Access to home directories is protected
 
 5. **ReadWritePaths=...**
-   - فقط مسیرهای مشخص شده قابل نوشتن
+   - Only specified paths are writable
 
-6. **محدودیت منابع**:
-   - `MemoryMax`: حداکثر حافظه
-   - `CPUQuota`: حداکثر CPU
-   - `LimitNOFILE`: حداکثر تعداد فایل‌های باز
-   - `TasksMax`: حداکثر تعداد Task ها
+6. **Resource limits**:
+   - `MemoryMax`: Maximum memory
+   - `CPUQuota`: Maximum CPU
+   - `LimitNOFILE`: Maximum number of open files
+   - `TasksMax`: Maximum number of tasks
 
-### بررسی امنیت سرویس
+### Checking Service Security
 
 ```bash
-# آنالیز امنیت سرویس
+# Analyze service security
 systemd-analyze security app-backend.service
 
-# نمایش تنظیمات امنیتی
+# Show security settings
 systemctl show app-backend.service | grep -i protect
 systemctl show app-backend.service | grep -i private
 
-# تست تنظیمات
+# Test settings
 sudo systemd-analyze verify /etc/systemd/system/app-backend.service
 ```
 
-### محافظت از فایل‌های .env
+### Protecting `.env` Files
 
 ```bash
-# مجوزهای امن برای .env
+# Secure permissions for .env
 sudo chmod 640 /workspace/.env
 sudo chown www-data:www-data /workspace/.env
 
-# جلوگیری از خواندن توسط کاربران دیگر
+# Prevent reading by other users
 ls -la /workspace/.env
-# باید نمایش دهد: -rw-r----- 1 www-data www-data
+# Should show: -rw-r----- 1 www-data www-data
 
-# Audit تغییرات
+# Audit changes
 sudo auditctl -w /workspace/.env -p war -k env_file_changes
 ```
 
@@ -509,67 +509,67 @@ sudo auditctl -w /workspace/.env -p war -k env_file_changes
 
 ## Troubleshooting
 
-### سرویس start نمی‌شود
+### Service does not start
 
 ```bash
-# بررسی دقیق خطا
+# Check for detailed errors
 sudo systemctl status app-backend.service -l
 
-# لاگ‌های کامل
+# Complete logs
 sudo journalctl -u app-backend.service -n 200 --no-pager
 
-# بررسی syntax فایل سرویس
+# Check the syntax of the service file
 sudo systemd-analyze verify /etc/systemd/system/app-backend.service
 
-# تست اجرای دستی
+# Test manual execution
 cd /workspace/backend
 sudo -u www-data /usr/bin/node dist/index.js
 ```
 
-### سرویس بعد از مدتی متوقف می‌شود
+### Service stops after a while
 
 ```bash
-# بررسی لاگ‌های crash
+# Check crash logs
 sudo journalctl -u app-backend.service --since "1 hour ago"
 
-# بررسی محدودیت حافظه
+# Check the memory limit
 systemctl status app-backend.service | grep Memory
 
-# افزایش محدودیت حافظه در فایل سرویس
-# MemoryMax=4G  # به جای 2G
+# Increase the memory limit in the service file
+# MemoryMax=4G  # Instead of 2G
 sudo systemctl daemon-reload
 sudo systemctl restart app-backend.service
 ```
 
-### مشکلات مجوزها
+### Permission problems
 
 ```bash
-# بررسی مجوزها
+# Check permissions
 ls -la /workspace/backend
 ls -la /workspace/.env
 ls -la /var/log/app
 
-# تنظیم مجدد مجوزها
+# Reset permissions
 sudo chown -R www-data:www-data /workspace/backend
 sudo chmod -R 755 /workspace/backend
 sudo chmod 640 /workspace/.env
 
-# تست دسترسی
+# Test access
 sudo -u www-data ls -la /workspace/backend
 sudo -u www-data cat /workspace/.env
 ```
 
-### اجرای دستی برای debug
+### Manual execution for debug
 
 ```bash
-# متوقف کردن سرویس
+# Stop the service
 sudo systemctl stop app-backend.service
 
-# اجرای دستی با کاربر www-data
+# Manual execution with the www-data user
 cd /workspace/backend
 sudo -u www-data bash -c 'source /workspace/.env && source /workspace/backend/.env && node dist/index.js'
 
-# یا با متغیرهای مستقیم
+# Or with direct variables
 sudo -u www-data \
   NODE_ENV=production \
   POSTGRES_HOST=localhost \
@@ -578,11 +578,11 @@ sudo -u www-data \
 
 ---
 
-## اسکریپت‌های کمکی
+## Helper Scripts
 
-### اسکریپت نصب خودکار
+### Automatic Installation Script
 
-ایجاد فایل `/workspace/infrastructure/install-systemd-services.sh`:
+Create the file `/workspace/infrastructure/install-systemd-services.sh`:
 
 ```bash
 #!/bin/bash
@@ -590,15 +590,15 @@ set -e
 
 echo "Installing systemd service files..."
 
-# کپی فایل‌های سرویس
+# Copy service files
 sudo cp /workspace/infrastructure/systemd/app-backend.service /etc/systemd/system/
 sudo cp /workspace/infrastructure/systemd/app-frontend.service /etc/systemd/system/
 sudo cp /workspace/infrastructure/systemd/app-worker.service /etc/systemd/system/
 
-# تنظیم مجوزها
+# Set permissions
 sudo chmod 644 /etc/systemd/system/app-*.service
 
-# بارگذاری مجدد systemd
+# Reload systemd
 sudo systemctl daemon-reload
 
 echo "Service files installed successfully!"
@@ -607,9 +607,9 @@ echo "  sudo systemctl enable app-backend.service app-frontend.service app-worke
 echo "  sudo systemctl start app-backend.service app-frontend.service app-worker.service"
 ```
 
-### اسکریپت مدیریت سرویس‌ها
+### Service Management Script
 
-ایجاد فایل `/workspace/infrastructure/manage-services.sh`:
+Create the file `/workspace/infrastructure/manage-services.sh`:
 
 ```bash
 #!/bin/bash
@@ -645,24 +645,24 @@ case "$1" in
 esac
 ```
 
-استفاده:
+Usage:
 
 ```bash
 chmod +x /workspace/infrastructure/manage-services.sh
 
-# شروع همه سرویس‌ها
+# Start all services
 ./manage-services.sh start
 
-# مشاهده لاگ‌ها
+# View logs
 ./manage-services.sh logs
 
-# ری‌استارت
+# Restart
 ./manage-services.sh restart
 ```
 
 ---
 
-## منابع
+## Resources
 
 - [systemd Service Documentation](https://www.freedesktop.org/software/systemd/man/systemd.service.html)
 - [systemd Security Features](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Sandboxing)
@@ -670,10 +670,10 @@ chmod +x /workspace/infrastructure/manage-services.sh
 
 ---
 
-**نکته نهایی**: این فایل‌های سرویس برای محیط Production بهینه شده‌اند. در محیط Development ممکن است بخواهید:
-- محدودیت‌های منابع را کاهش دهید
-- گزینه‌های hardening را غیرفعال کنید
-- سطح لاگ را افزایش دهید (`LOG_LEVEL=debug`)
+**Final Note**: These service files are optimized for a production environment. In a development environment, you may want to:
+- Reduce resource limits
+- Disable hardening options
+- Increase the log level (`LOG_LEVEL=debug`)
 
-**تاریخ آخرین بروزرسانی**: 2025-10-21  
-**نسخه**: 1.0
+**Last Updated**: 2025-10-21
+**Version**: 1.0

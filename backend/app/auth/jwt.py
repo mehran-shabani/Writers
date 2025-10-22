@@ -16,15 +16,15 @@ def create_access_token(
     data: Dict[str, Any],
     expires_delta: Optional[timedelta] = None
 ) -> str:
-    """
-    Create a short-term JWT access token.
-    
+    """Generates a short-lived JWT access token.
+
     Args:
-        data: Dictionary containing token payload (typically user_id, email, etc.)
-        expires_delta: Optional custom expiration time
-    
+        data (Dict[str, Any]): The payload to include in the token.
+        expires_delta (Optional[timedelta]): The expiration time for the token.
+                                              Defaults to 30 minutes.
+
     Returns:
-        Encoded JWT token string
+        str: The encoded JWT access token.
     """
     to_encode = data.copy()
     
@@ -46,15 +46,15 @@ def create_refresh_token(
     data: Dict[str, Any],
     expires_delta: Optional[timedelta] = None
 ) -> str:
-    """
-    Create a long-term JWT refresh token.
-    
+    """Generates a long-lived JWT refresh token.
+
     Args:
-        data: Dictionary containing token payload (typically user_id)
-        expires_delta: Optional custom expiration time
-    
+        data (Dict[str, Any]): The payload to include in the token.
+        expires_delta (Optional[timedelta]): The expiration time for the token.
+                                              Defaults to 7 days.
+
     Returns:
-        Encoded JWT token string
+        str: The encoded JWT refresh token.
     """
     to_encode = data.copy()
     
@@ -73,14 +73,14 @@ def create_refresh_token(
 
 
 def verify_token(token: str) -> Optional[Dict[str, Any]]:
-    """
-    Verify and decode a JWT token.
-    
+    """Decodes and verifies a JWT token.
+
     Args:
-        token: JWT token string to verify
-    
+        token (str): The JWT token to verify.
+
     Returns:
-        Decoded token payload if valid, None if invalid
+        Optional[Dict[str, Any]]: The decoded payload if the token is valid,
+                                 otherwise None.
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -90,14 +90,14 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
 
 
 def get_user_id_from_token(token: str) -> Optional[str]:
-    """
-    Extract user_id from a JWT token.
-    
+    """Extracts the user ID from a JWT token.
+
     Args:
-        token: JWT token string
-    
+        token (str): The JWT token to process.
+
     Returns:
-        User ID if valid, None if invalid
+        Optional[str]: The user ID from the token payload if valid,
+                       otherwise None.
     """
     payload = verify_token(token)
     if payload:

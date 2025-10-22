@@ -1,10 +1,10 @@
-# راهنمای شروع سریع (Quick Start)
+# Quick Start Guide
 
-این راهنما برای راه‌اندازی سریع اپلیکیشن با Docker Compose است.
+This guide is for quickly setting up the application with Docker Compose.
 
 ---
 
-## ⚡ شروع سریع با اسکریپت خودکار
+## ⚡ Quick Start with the Automated Script
 
 ```bash
 cd /workspace/infrastructure
@@ -12,81 +12,81 @@ chmod +x quick-start-docker.sh
 ./quick-start-docker.sh
 ```
 
-این اسکریپت به‌صورت خودکار:
-- ✅ Docker و Docker Compose را بررسی می‌کند
-- ✅ فایل‌های `.env` را ایجاد می‌کند
-- ✅ دایرکتوری‌های مورد نیاز را می‌سازد
-- ✅ Image ها را build می‌کند
-- ✅ تمام سرویس‌ها را اجرا می‌کند
-- ✅ سلامت سرویس‌ها را تست می‌کند
+This script automatically:
+- ✅ Checks for Docker and Docker Compose
+- ✅ Creates `.env` files
+- ✅ Creates the necessary directories
+- ✅ Builds the images
+- ✅ Runs all services
+- ✅ Tests the health of the services
 
 ---
 
-## 📝 مراحل دستی
+## 📝 Manual Steps
 
-اگر ترجیح می‌دهید مراحل را به‌صورت دستی انجام دهید:
+If you prefer to perform the steps manually:
 
-### مرحله 1: پیکربندی متغیرهای محیطی
+### Step 1: Configure Environment Variables
 
 ```bash
-# ریشه پروژه
+# Project root
 cd /workspace
 cp .env.example .env
-nano .env  # ویرایش و تنظیم رمزها
+nano .env  # Edit and set passwords
 
 # Infrastructure
 cd infrastructure
 cp .env.docker .env
-nano .env  # تنظیم رمزهای امن
+nano .env  # Set secure passwords
 ```
 
-**حتماً این مقادیر را تغییر دهید:**
+**Be sure to change these values:**
 - `POSTGRES_PASSWORD`
 - `REDIS_PASSWORD`
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`
 - `SESSION_SECRET`
 
-**برای تولید رمز امن:**
+**To generate a secure password:**
 ```bash
 openssl rand -base64 48
 ```
 
-### مرحله 2: آماده‌سازی زیرساخت
+### Step 2: Prepare the Infrastructure
 
-اگر سرور جدید است:
+If this is a new server:
 
 ```bash
 cd /workspace/infrastructure
 
-# PostgreSQL روی SSD
+# PostgreSQL on SSD
 sudo ./setup_postgresql.sh
 
 # Redis
 sudo ./setup_redis.sh
 
-# Storage (فضای ذخیره‌سازی 100TB)
-# ابتدا device را شناسایی کنید: lsblk
+# Storage (100TB storage space)
+# First, identify the device: lsblk
 sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh
 ```
 
-### مرحله 3: اجرای Docker Compose
+### Step 3: Run Docker Compose
 
 ```bash
 cd /workspace/infrastructure
 
-# Build و اجرا
+# Build and run
 docker compose build
 docker compose up -d
 
-# بررسی وضعیت
+# Check the status
 docker compose ps
 
-# مشاهده لاگ‌ها
+# View the logs
 docker compose logs -f
 ```
 
-### مرحله 4: تست
+### Step 4: Test
 
 ```bash
 # PostgreSQL
@@ -104,186 +104,186 @@ curl http://localhost:3000
 
 ---
 
-## 🎯 دسترسی به سرویس‌ها
+## 🎯 Accessing the Services
 
-پس از راه‌اندازی موفق:
+After a successful launch:
 
-| سرویس | URL | توضیحات |
-|-------|-----|---------|
-| Frontend | http://localhost:3000 | رابط کاربری وب |
-| Backend API | http://localhost:8000 | API سرور |
-| PostgreSQL | localhost:5432 | فقط در Docker network |
-| Redis | localhost:6379 | فقط در Docker network |
+| Service | URL | Description |
+|---|---|---|
+| Frontend | http://localhost:3000 | Web user interface |
+| Backend API | http://localhost:8000 | API server |
+| PostgreSQL | localhost:5432 | In Docker network only |
+| Redis | localhost:6379 | In Docker network only |
 
 ---
 
-## 🛠️ دستورات مفید
+## 🛠️ Useful Commands
 
-### مدیریت سرویس‌ها
+### Service Management
 
 ```bash
-# مشاهده وضعیت
+# View status
 docker compose ps
 
-# مشاهده لاگ‌ها
+# View logs
 docker compose logs -f
 
-# لاگ یک سرویس خاص
+# Log a specific service
 docker compose logs -f backend
 
-# ری‌استارت یک سرویس
+# Restart a service
 docker compose restart backend
 
-# ری‌استارت همه
+# Restart all
 docker compose restart
 
-# متوقف کردن
+# Stop
 docker compose stop
 
-# حذف سرویس‌ها (داده‌ها حفظ می‌شود)
+# Remove services (data is preserved)
 docker compose down
 
-# حذف با volume ها (خطرناک - تمام داده‌ها پاک می‌شود!)
+# Remove with volumes (dangerous - all data is deleted!)
 docker compose down -v
 ```
 
-### مانیتورینگ
+### Monitoring
 
 ```bash
-# منابع مصرفی
+# Resource consumption
 docker stats
 
-# فضای دیسک استفاده شده
+# Disk space used
 docker system df
 
-# بررسی health
+# Check health
 docker compose ps
 
-# دسترسی به shell یک container
+# Access the shell of a container
 docker compose exec backend sh
 docker compose exec postgres psql -U myapp_user -d myapp_db
 ```
 
-### Scale کردن Worker
+### Scaling the Worker
 
 ```bash
-# اجرای 3 instance از worker
+# Run 3 instances of the worker
 docker compose up -d --scale worker=3
 
-# بررسی
+# Check
 docker compose ps worker
 ```
 
 ---
 
-## 🐛 عیب‌یابی
+## 🐛 Troubleshooting
 
-### سرویس start نمی‌شود
+### Service does not start
 
 ```bash
-# بررسی لاگ‌های دقیق
+# Check detailed logs
 docker compose logs backend
 
-# بررسی وضعیت
+# Check status
 docker compose ps
 
-# ری‌استارت با build مجدد
+# Restart with rebuild
 docker compose down
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### خطای اتصال به Database
+### Database connection error
 
 ```bash
-# بررسی health PostgreSQL
+# Check PostgreSQL health
 docker compose exec postgres pg_isready
 
-# بررسی متغیرهای محیطی
+# Check environment variables
 docker compose exec backend env | grep POSTGRES
 
-# اتصال مستقیم
+# Direct connection
 docker compose exec postgres psql -U myapp_user -d myapp_db
 ```
 
-### فضای دیسک پر شده
+### Disk space full
 
 ```bash
-# پاک‌سازی image ها و container های قدیمی
+# Clean up old images and containers
 docker system prune -a
 
-# حذف volume های استفاده نشده (احتیاط!)
+# Remove unused volumes (caution!)
 docker volume prune
 ```
 
-### Port در حال استفاده است
+### Port in use
 
 ```bash
-# پیدا کردن process
+# Find the process
 sudo lsof -i :8000
 
-# یا تغییر port در .env
+# Or change the port in .env
 BACKEND_PORT=8001
 docker compose up -d
 ```
 
 ---
 
-## 🔒 نکات امنیتی
+## 🔒 Security Tips
 
-### ✅ انجام دهید:
+### ✅ Do:
 
-1. **رمزهای قوی استفاده کنید**
+1. **Use strong passwords**
    ```bash
    openssl rand -base64 48
    ```
 
-2. **فایل‌های .env را commit نکنید**
+2. **Do not commit `.env` files**
    ```bash
-   # بررسی قبل از commit
+   # Check before commit
    git status
    ```
 
-3. **برای production از firewall استفاده کنید**
+3. **Use a firewall for production**
    ```bash
-   # فقط port های لازم را باز کنید
+   # Open only necessary ports
    sudo ufw allow 80/tcp
    sudo ufw allow 443/tcp
    sudo ufw enable
    ```
 
-4. **بروزرسانی منظم**
+4. **Update regularly**
    ```bash
    docker compose pull
    docker compose up -d
    ```
 
-### ❌ انجام ندهید:
+### ❌ Do not:
 
-- ❌ رمزهای پیش‌فرض را استفاده نکنید
-- ❌ پورت‌های database را به اینترنت expose نکنید
-- ❌ بدون backup تغییرات مهم ندهید
-
----
-
-## 📚 منابع بیشتر
-
-- **[DEPLOYMENT.md](DEPLOYMENT.md)**: راهنمای کامل استقرار
-- **[SYSTEMD_SERVICES.md](SYSTEMD_SERVICES.md)**: جایگزین systemd
-- **[../ENV_SETUP.md](../ENV_SETUP.md)**: راهنمای متغیرهای محیطی
-- **[README.md](README.md)**: اطلاعات کلی infrastructure
+- ❌ Do not use default passwords
+- ❌ Do not expose database ports to the internet
+- ❌ Do not make significant changes without a backup
 
 ---
 
-## 🆘 نیاز به کمک؟
+## 📚 More Resources
 
-اگر مشکلی داشتید:
-
-1. لاگ‌ها را بررسی کنید: `docker compose logs -f`
-2. مستندات کامل را بخوانید: `cat DEPLOYMENT.md`
-3. سرویس‌ها را ری‌استارت کنید: `docker compose restart`
-4. با تیم توسعه تماس بگیرید
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Complete deployment guide
+- **[SYSTEMD_SERVICES.md](SYSTEMD_SERVICES.md)**: systemd alternative
+- **[../ENV_SETUP.md](../ENV_SETUP.md)**: Environment variables guide
+- **[README.md](README.md)**: General infrastructure information
 
 ---
 
-**موفق باشید! 🚀**
+## 🆘 Need Help?
+
+If you have a problem:
+
+1. Check the logs: `docker compose logs -f`
+2. Read the full documentation: `cat DEPLOYMENT.md`
+3. Restart the services: `docker compose restart`
+4. Contact the development team
+
+---
+
+**Good luck! 🚀**

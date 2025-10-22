@@ -4,6 +4,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User, LoginRequest, RegisterRequest } from '@/types/auth';
 import { authService } from '@/lib/auth';
 
+/**
+ * @interface AuthContextType
+ * @description Represents the shape of the authentication context.
+ */
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -13,8 +17,18 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
+/**
+ * @const AuthContext
+ * @description The React context for authentication.
+ */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * @component AuthProvider
+ * @description Provides authentication state to its children components.
+ * @param {{ children: ReactNode }} { children } - The child components.
+ * @returns {JSX.Element} The AuthProvider component.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * @hook useAuth
+ * @description Custom hook for accessing the authentication context.
+ * @throws {Error} If used outside of an AuthProvider.
+ * @returns {AuthContextType} The authentication context.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

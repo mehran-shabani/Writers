@@ -2,23 +2,24 @@
 # =============================================================================
 # Quick Start Script for Docker Compose Deployment
 # =============================================================================
-# این اسکریپت برای راه‌اندازی سریع اپلیکیشن با Docker Compose
-# 
-# استفاده:
+# This script automates the setup and launch of the application using
+# Docker Compose.
+#
+# Usage:
 #   chmod +x quick-start-docker.sh
 #   ./quick-start-docker.sh
 # =============================================================================
 
-set -e  # خروج در صورت خطا
+set -e  # Exit immediately if a command exits with a non-zero status.
 
-# رنگ‌ها برای output
+# Colors for output messages.
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# تابع برای چاپ پیام‌ها
+# Functions for printing formatted messages.
 info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -35,208 +36,208 @@ error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# بررسی اجرا با root
-if [ "$EUID" -eq 0 ]; then 
-   error "لطفاً این اسکریپت را بدون sudo اجرا کنید"
+# Check if the script is run as root.
+if [ "$EUID" -eq 0 ]; then
+   error "Please run this script without sudo."
    exit 1
 fi
 
-info "شروع راه‌اندازی سریع اپلیکیشن با Docker Compose..."
+info "Starting the quick setup for the application with Docker Compose..."
 echo ""
 
-# بررسی نصب Docker
-info "بررسی نصب Docker..."
+# Check for Docker installation.
+info "Checking for Docker installation..."
 if ! command -v docker &> /dev/null; then
-    error "Docker نصب نیست. لطفاً ابتدا Docker را نصب کنید."
-    echo "برای نصب: https://docs.docker.com/engine/install/"
+    error "Docker is not installed. Please install Docker first."
+    echo "Installation guide: https://docs.docker.com/engine/install/"
     exit 1
 fi
 
 if ! command -v docker compose &> /dev/null; then
-    error "Docker Compose نصب نیست."
+    error "Docker Compose is not installed."
     exit 1
 fi
 
-success "Docker و Docker Compose نصب شده‌اند"
+success "Docker and Docker Compose are installed."
 docker --version
 docker compose version
 echo ""
 
-# بررسی فایل .env
-info "بررسی فایل متغیرهای محیطی..."
+# Check for the .env file.
+info "Checking for the environment variables file..."
 if [ ! -f "../.env" ]; then
-    warning "فایل .env یافت نشد. در حال ایجاد از .env.example..."
+    warning ".env file not found. Creating from .env.example..."
     if [ -f "../.env.example" ]; then
         cp ../.env.example ../.env
-        warning "فایل .env ایجاد شد. لطفاً رمزها را تنظیم کنید!"
+        warning ".env file created. Please set the passwords."
         echo ""
-        echo "برای تولید رمز امن:"
+        echo "To generate a secure password:"
         echo "  openssl rand -base64 48"
         echo ""
-        read -p "آیا می‌خواهید ادامه دهید؟ (y/n) " -n 1 -r
+        read -p "Do you want to continue? (y/n) " -n 1 -r
         echo ""
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             exit 1
         fi
     else
-        error "فایل .env.example یافت نشد!"
+        error ".env.example file not found."
         exit 1
     fi
 else
-    success "فایل .env موجود است"
+    success ".env file is present."
 fi
 echo ""
 
-# بررسی فایل .env در infrastructure
-info "بررسی فایل .env در infrastructure..."
+# Check for the .env file in the infrastructure directory.
+info "Checking for the .env file in the infrastructure directory..."
 if [ ! -f ".env" ]; then
     if [ -f ".env.docker" ]; then
-        info "کپی .env.docker به .env..."
+        info "Copying .env.docker to .env..."
         cp .env.docker .env
-        warning "لطفاً فایل infrastructure/.env را ویرایش کنید"
+        warning "Please edit the infrastructure/.env file."
     fi
 fi
 echo ""
 
-# بررسی دایرکتوری storage
-info "بررسی دایرکتوری /storage..."
+# Check for the storage directory.
+info "Checking for the /storage directory..."
 if [ ! -d "/storage" ]; then
-    warning "/storage موجود نیست"
-    warning "اگر فضای ذخیره‌سازی جداگانه دارید، ابتدا آن را mount کنید:"
+    warning "/storage does not exist."
+    warning "If you have a separate storage device, mount it first:"
     echo "  sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh"
     echo ""
-    read -p "آیا می‌خواهید با یک دایرکتوری موقت ادامه دهید؟ (y/n) " -n 1 -r
+    read -p "Do you want to continue with a temporary directory? (y/n) " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        info "ایجاد /tmp/storage به عنوان موقت..."
+        info "Creating /tmp/storage as a temporary directory..."
         mkdir -p /tmp/storage/uploads /tmp/storage/results
-        warning "در production حتماً از دیسک جداگانه استفاده کنید!"
+        warning "In production, be sure to use a separate disk."
     else
         exit 1
     fi
 else
-    success "/storage موجود است"
+    success "/storage is present."
 fi
 echo ""
 
-# بررسی SSD برای PostgreSQL
-info "بررسی SSD برای PostgreSQL..."
+# Check for the SSD for PostgreSQL.
+info "Checking for the SSD for PostgreSQL..."
 SSD_PATH="${SSD_MOUNT_POINT:-/mnt/ssd}"
 if [ ! -d "$SSD_PATH/postgresql/data" ]; then
-    warning "$SSD_PATH/postgresql/data موجود نیست"
-    info "ایجاد دایرکتوری داده PostgreSQL..."
+    warning "$SSD_PATH/postgresql/data does not exist."
+    info "Creating PostgreSQL data directory..."
     sudo mkdir -p "$SSD_PATH/postgresql/data"
-    sudo chown -R 999:999 "$SSD_PATH/postgresql/data"  # PostgreSQL UID در Docker
+    sudo chown -R 999:999 "$SSD_PATH/postgresql/data"  # PostgreSQL UID in Docker
     sudo chmod 700 "$SSD_PATH/postgresql/data"
-    success "دایرکتوری ایجاد شد"
+    success "Directory created."
 else
-    success "دایرکتوری PostgreSQL data موجود است"
+    success "PostgreSQL data directory is present."
 fi
 echo ""
 
-# Pull کردن image های پایه
-info "دانلود image های Docker..."
+# Pull base images.
+info "Downloading Docker images..."
 docker compose pull postgres redis || true
 echo ""
 
-# Build کردن image های اپلیکیشن
-info "Build کردن image های اپلیکیشن..."
+# Build application images.
+info "Building application images..."
 if [ -d "../backend" ] && [ -f "../backend/Dockerfile" ]; then
-    info "Build backend..."
+    info "Building backend..."
     docker compose build backend
 else
-    warning "Dockerfile برای backend یافت نشد - از image استفاده می‌شود"
+    warning "Dockerfile for backend not found - an image will be used."
 fi
 
 if [ -d "../frontend" ] && [ -f "../frontend/Dockerfile" ]; then
-    info "Build frontend..."
+    info "Building frontend..."
     docker compose build frontend
 else
-    warning "Dockerfile برای frontend یافت نشد - از image استفاده می‌شود"
+    warning "Dockerfile for frontend not found - an image will be used."
 fi
 
 if [ -d "../worker" ] && [ -f "../worker/Dockerfile" ]; then
-    info "Build worker..."
+    info "Building worker..."
     docker compose build worker
 else
-    warning "Dockerfile برای worker یافت نشد - از image استفاده می‌شود"
+    warning "Dockerfile for worker not found - an image will be used."
 fi
 echo ""
 
-# اجرای سرویس‌ها
-info "اجرای سرویس‌ها..."
+# Run services.
+info "Running services..."
 docker compose up -d
 echo ""
 
-# انتظار برای آماده شدن سرویس‌ها
-info "انتظار برای آماده شدن سرویس‌ها (30 ثانیه)..."
+# Wait for services to be ready.
+info "Waiting for services to be ready (30 seconds)..."
 sleep 30
 echo ""
 
-# بررسی وضعیت
-info "بررسی وضعیت سرویس‌ها..."
+# Check status.
+info "Checking the status of services..."
 docker compose ps
 echo ""
 
-# نمایش لاگ‌ها
-info "لاگ‌های اخیر:"
+# Display recent logs.
+info "Recent logs:"
 docker compose logs --tail=20
 echo ""
 
-# تست سلامت سرویس‌ها
+# Test the health of services.
 echo "=================================="
-info "تست سلامت سرویس‌ها:"
+info "Testing the health of services:"
 echo "=================================="
 
 # PostgreSQL
 if docker compose exec -T postgres pg_isready &> /dev/null; then
-    success "✓ PostgreSQL: آماده"
+    success "✓ PostgreSQL: Ready"
 else
-    error "✗ PostgreSQL: مشکل دارد"
+    error "✗ PostgreSQL: Has issues"
 fi
 
 # Redis
 if docker compose exec -T redis redis-cli ping &> /dev/null; then
-    success "✓ Redis: آماده"
+    success "✓ Redis: Ready"
 else
-    error "✗ Redis: مشکل دارد"
+    error "✗ Redis: Has issues"
 fi
 
-# Backend (اگر endpoint health دارد)
+# Backend (if it has a health endpoint)
 if command -v curl &> /dev/null; then
     if curl -f -s http://localhost:8000/health &> /dev/null; then
-        success "✓ Backend: آماده"
+        success "✓ Backend: Ready"
     else
-        warning "✗ Backend: در حال راه‌اندازی یا مشکل دارد"
+        warning "✗ Backend: Starting up or has issues"
     fi
 fi
 
 # Frontend
 if command -v curl &> /dev/null; then
     if curl -f -s http://localhost:3000 &> /dev/null; then
-        success "✓ Frontend: آماده"
+        success "✓ Frontend: Ready"
     else
-        warning "✗ Frontend: در حال راه‌اندازی یا مشکل دارد"
+        warning "✗ Frontend: Starting up or has issues"
     fi
 fi
 
 echo ""
 echo "=================================="
-success "راه‌اندازی کامل شد!"
+success "Setup complete!"
 echo "=================================="
 echo ""
-echo "دسترسی به سرویس‌ها:"
+echo "Access the services:"
 echo "  - Frontend:  http://localhost:3000"
 echo "  - Backend:   http://localhost:8000"
-echo "  - PostgreSQL: localhost:5432 (فقط در Docker network)"
-echo "  - Redis:      localhost:6379 (فقط در Docker network)"
+echo "  - PostgreSQL: localhost:5432 (in Docker network only)"
+echo "  - Redis:      localhost:6379 (in Docker network only)"
 echo ""
-echo "دستورات مفید:"
-echo "  - مشاهده لاگ‌ها:        docker compose logs -f"
-echo "  - بررسی وضعیت:          docker compose ps"
-echo "  - ری‌استارت سرویس:      docker compose restart [service]"
-echo "  - متوقف کردن:           docker compose stop"
-echo "  - حذف سرویس‌ها:         docker compose down"
+echo "Useful commands:"
+echo "  - View logs:        docker compose logs -f"
+echo "  - Check status:          docker compose ps"
+echo "  - Restart a service:      docker compose restart [service]"
+echo "  - Stop:           docker compose stop"
+echo "  - Remove services:         docker compose down"
 echo ""
-echo "برای جزئیات بیشتر: cat DEPLOYMENT.md"
+echo "For more details: cat DEPLOYMENT.md"
 echo ""

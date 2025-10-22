@@ -30,11 +30,19 @@ app.include_router(tasks_router)
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Provides a welcome message for the API root.
+
+    Returns:
+        dict: A dictionary with a welcome message.
+    """
     return {"message": "Welcome to Writers API"}
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Performs a health check of the API.
+
+    Returns:
+        dict: A dictionary indicating the API status.
+    """
     return {"status": "healthy"}

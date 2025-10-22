@@ -12,18 +12,22 @@ async def get_current_user(
     access_token: Optional[str] = Cookie(None),
     session: Session = Depends(get_session)
 ) -> User:
-    """
-    Authentication dependency that extracts and validates user from httpOnly cookie.
-    
+    """Retrieves and validates the current user from an httpOnly access token.
+
+    This function is a FastAPI dependency that extracts a JWT from a cookie,
+    verifies it, and fetches the corresponding user from the database. It raises
+    an HTTPException if the token is missing, invalid, or the user is not found.
+
     Args:
-        access_token: JWT token from httpOnly cookie
-        session: Database session
-    
+        access_token (Optional[str]): The JWT access token from the httpOnly cookie.
+        session (Session): The database session.
+
     Returns:
-        Authenticated User object
-    
+        User: The authenticated user object.
+
     Raises:
-        HTTPException: If token is invalid or user not found
+        HTTPException: If the access token is invalid, the user is not found,
+                       or the user is inactive.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -73,17 +77,19 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    """
-    Dependency to get current active user.
-    
+    """Ensures that the current user is active.
+
+    This function is a FastAPI dependency that builds on `get_current_user` to
+    provide an additional check for whether the user is active.
+
     Args:
-        current_user: User from get_current_user dependency
-    
+        current_user (User): The user object obtained from `get_current_user`.
+
     Returns:
-        Active User object
-    
+        User: The authenticated and active user object.
+
     Raises:
-        HTTPException: If user is inactive
+        HTTPException: If the user is inactive.
     """
     if not current_user.is_active:
         raise HTTPException(

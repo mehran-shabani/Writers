@@ -1,58 +1,58 @@
-# راهنمای استقرار (Deployment Guide)
+# Deployment Guide
 
-این مستند شامل دو روش استقرار اپلیکیشن است:
-1. **استقرار با Docker Compose** (توصیه شده برای محیط‌های Development و Production)
-2. **استقرار مستقیم با systemd** (برای اجرای Native روی سرور)
-
----
-
-## 📋 فهرست مطالب
-
-- [پیش‌نیازها](#پیش-نیازها)
-- [روش ۱: استقرار با Docker Compose](#روش-۱-استقرار-با-docker-compose)
-  - [نصب Docker و Docker Compose](#نصب-docker-و-docker-compose)
-  - [پیکربندی محیطی](#پیکربندی-محیطی)
-  - [راه‌اندازی سرویس‌ها](#راه-اندازی-سرویس-ها)
-  - [مدیریت و نگهداری](#مدیریت-و-نگهداری)
-- [روش ۲: استقرار مستقیم با systemd](#روش-۲-استقرار-مستقیم-با-systemd)
-  - [نصب وابستگی‌ها](#نصب-وابستگی-ها)
-  - [راه‌اندازی زیرساخت](#راه-اندازی-زیرساخت)
-  - [پیکربندی systemd](#پیکربندی-systemd)
-  - [مدیریت سرویس‌ها](#مدیریت-سرویس-ها)
-- [مانیتورینگ و لاگ‌ها](#مانیتورینگ-و-لاگ-ها)
-- [پشتیبان‌گیری](#پشتیبان-گیری)
-- [عیب‌یابی](#عیب-یابی)
+This document provides two methods for deploying the application:
+1. **Deployment with Docker Compose** (Recommended for both development and production environments)
+2. **Direct Deployment with systemd** (For running natively on a server)
 
 ---
 
-## پیش‌نیازها
+## 📋 Table of Contents
 
-### سخت‌افزار
-- **CPU**: حداقل 4 هسته (توصیه: 8+ هسته)
-- **RAM**: حداقل 8GB (توصیه: 16GB+)
-- **SSD**: برای PostgreSQL (حداقل 100GB)
-- **Storage**: 100TB برای فایل‌های اپلیکیشن (mount در `/storage`)
-
-### نرم‌افزار
-- **سیستم‌عامل**: Ubuntu 20.04/22.04 LTS یا Debian 11/12
-- **دسترسی**: کاربر با دسترسی sudo
-- **شبکه**: اتصال به اینترنت برای دانلود بسته‌ها
+- [Prerequisites](#prerequisites)
+- [Method 1: Deployment with Docker Compose](#method-1-deployment-with-docker-compose)
+  - [Installing Docker and Docker Compose](#installing-docker-and-docker-compose)
+  - [Environment Configuration](#environment-configuration)
+  - [Launching Services](#launching-services)
+  - [Management and Maintenance](#management-and-maintenance)
+- [Method 2: Direct Deployment with systemd](#method-2-direct-deployment-with-systemd)
+  - [Installing Dependencies](#installing-dependencies)
+  - [Infrastructure Setup](#infrastructure-setup)
+  - [systemd Configuration](#systemd-configuration)
+  - [Service Management](#service-management)
+- [Monitoring and Logs](#monitoring-and-logs)
+- [Backup](#backup)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
-# روش ۱: استقرار با Docker Compose
+## Prerequisites
 
-استفاده از Docker Compose ساده‌ترین و سریع‌ترین روش برای استقرار است.
+### Hardware
+- **CPU**: Minimum 4 cores (8+ cores recommended)
+- **RAM**: Minimum 8GB (16GB+ recommended)
+- **SSD**: For PostgreSQL (minimum 100GB)
+- **Storage**: 100TB for application files (mounted at `/storage`)
 
-## نصب Docker و Docker Compose
+### Software
+- **Operating System**: Ubuntu 20.04/22.04 LTS or Debian 11/12
+- **Access**: User with sudo privileges
+- **Network**: Internet connection for downloading packages
+
+---
+
+# Method 1: Deployment with Docker Compose
+
+Using Docker Compose is the simplest and fastest method for deployment.
+
+## Installing Docker and Docker Compose
 
 ### Ubuntu/Debian
 
 ```bash
-# حذف نسخه‌های قدیمی (اگر وجود دارد)
+# Remove old versions (if they exist)
 sudo apt-get remove docker docker-engine docker.io containerd runc
 
-# نصب وابستگی‌ها
+# Install dependencies
 sudo apt-get update
 sudo apt-get install -y \
     ca-certificates \
@@ -60,75 +60,75 @@ sudo apt-get install -y \
     gnupg \
     lsb-release
 
-# افزودن GPG key رسمی Docker
+# Add Docker's official GPG key
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-# افزودن repository Docker
+# Add the Docker repository
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# نصب Docker Engine و Docker Compose
+# Install Docker Engine and Docker Compose
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# اضافه کردن کاربر فعلی به گروه docker
+# Add the current user to the docker group
 sudo usermod -aG docker $USER
 
-# فعال‌سازی خودکار در startup
+# Enable automatic startup
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# تست نصب
+# Test the installation
 docker --version
 docker compose version
 ```
 
-**نکته**: پس از اجرای دستور `usermod`، باید از سیستم خارج و دوباره وارد شوید.
+**Note**: After running the `usermod` command, you must log out and log back in.
 
-## پیکربندی محیطی
+## Environment Configuration
 
-### 1. آماده‌سازی فضای ذخیره‌سازی
+### 1. Preparing the Storage Space
 
-اگر هنوز فضای ذخیره‌سازی ۱۰۰TB را mount نکرده‌اید:
+If you have not yet mounted the 100TB storage space:
 
 ```bash
-# اجرای اسکریپت setup_storage.sh
+# Run the setup_storage.sh script
 cd /workspace/infrastructure
 sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh
 ```
 
-این اسکریپت:
-- دیسک را در `/storage` mount می‌کند
-- دایرکتوری‌های `uploads/` و `results/` ایجاد می‌کند
-- مجوزهای مناسب را تنظیم می‌کند
-- mount را در `/etc/fstab` پایدار می‌کند
+This script:
+- Mounts the disk at `/storage`
+- Creates `uploads/` and `results/` directories
+- Sets the appropriate permissions
+- Makes the mount persistent in `/etc/fstab`
 
-### 2. آماده‌سازی SSD برای PostgreSQL
+### 2. Preparing the SSD for PostgreSQL
 
 ```bash
-# اجرای اسکریپت setup_postgresql.sh
+# Run the setup_postgresql.sh script
 cd /workspace/infrastructure
 sudo SSD_MOUNT_POINT=/mnt/ssd ./setup_postgresql.sh
 ```
 
-**نکته مهم**: برای استقرار با Docker، این اسکریپت فقط برای ایجاد دایرکتوری داده PostgreSQL استفاده می‌شود. سرویس PostgreSQL توسط Docker اجرا می‌شود.
+**Important Note**: For deployment with Docker, this script is only used to create the PostgreSQL data directory. The PostgreSQL service is run by Docker.
 
-### 3. پیکربندی فایل‌های محیطی
+### 3. Configuring Environment Files
 
 ```bash
-# بازگشت به ریشه پروژه
+# Return to the project root
 cd /workspace
 
-# کپی فایل نمونه متغیرهای محیطی
+# Copy the sample environment variables file
 cp .env.example .env
 
-# ویرایش و تنظیم مقادیر واقعی
+# Edit and set the actual values
 nano .env
 ```
 
-**متغیرهای مهم که باید تنظیم شوند:**
+**Important variables that must be set:**
 
 ```bash
 # Database
@@ -161,22 +161,22 @@ FRONTEND_PORT=3000
 BACKEND_PORT=8000
 ```
 
-**تولید رمزهای امن:**
+**Generating secure passwords:**
 
 ```bash
-# با OpenSSL
+# With OpenSSL
 openssl rand -base64 48
 
-# با Python
+# With Python
 python3 -c "import secrets; print(secrets.token_hex(32))"
 
-# با Node.js
+# With Node.js
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### 4. ایجاد فایل‌های محیطی سرویس‌ها
+### 4. Creating Service Environment Files
 
-اگر سرویس‌های frontend, backend, worker نیاز به متغیرهای اختصاصی دارند:
+If the frontend, backend, or worker services require specific variables:
 
 ```bash
 # Frontend
@@ -189,105 +189,105 @@ touch backend/.env
 touch worker/.env
 ```
 
-## راه‌اندازی سرویس‌ها
+## Launching Services
 
-### Build و اجرای سرویس‌ها
+### Building and Running Services
 
 ```bash
-# رفتن به دایرکتوری infrastructure
+# Go to the infrastructure directory
 cd /workspace/infrastructure
 
-# Build کردن image ها (اولین بار)
+# Build the images (first time)
 docker compose build
 
-# اجرای تمام سرویس‌ها در background
+# Run all services in the background
 docker compose up -d
 
-# مشاهده وضعیت سرویس‌ها
+# View the status of services
 docker compose ps
 
-# مشاهده لاگ‌های تمام سرویس‌ها
+# View the logs of all services
 docker compose logs -f
 
-# مشاهده لاگ یک سرویس خاص
+# View the log of a specific service
 docker compose logs -f backend
 ```
 
-### چک کردن سلامت سرویس‌ها
+### Checking the Health of Services
 
 ```bash
-# بررسی health check
+# Check the health check
 docker compose ps
 
-# تست اتصال به PostgreSQL
+# Test the connection to PostgreSQL
 docker compose exec postgres psql -U myapp_user -d myapp_db -c "SELECT version();"
 
-# تست اتصال به Redis
+# Test the connection to Redis
 docker compose exec redis redis-cli -a YOUR_REDIS_PASSWORD ping
 
-# تست Backend API
+# Test the Backend API
 curl http://localhost:8000/health
 
-# تست Frontend
+# Test the Frontend
 curl http://localhost:3000
 ```
 
-## مدیریت و نگهداری
+## Management and Maintenance
 
-### دستورات پرکاربرد
+### Common Commands
 
 ```bash
-# مشاهده لاگ‌ها
+# View logs
 docker compose logs -f [service_name]
 
-# ری‌استارت یک سرویس
+# Restart a service
 docker compose restart backend
 
-# ری‌استارت تمام سرویس‌ها
+# Restart all services
 docker compose restart
 
-# متوقف کردن سرویس‌ها
+# Stop services
 docker compose stop
 
-# حذف سرویس‌ها (داده‌ها حفظ می‌شود)
+# Remove services (data is preserved)
 docker compose down
 
-# حذف سرویس‌ها + volume ها (خطرناک!)
+# Remove services + volumes (dangerous!)
 docker compose down -v
 
-# Scale کردن worker برای پردازش بیشتر
+# Scale the worker for more processing
 docker compose up -d --scale worker=3
 
-# بروزرسانی image ها
+# Update images
 docker compose pull
 docker compose up -d
 
-# مشاهده منابع مصرفی
+# View resource consumption
 docker stats
 ```
 
-### مانیتورینگ
+### Monitoring
 
 ```bash
-# نصابت Docker stats برای مانیتورینگ real-time
+# Install Docker stats for real-time monitoring
 watch -n 1 'docker stats --no-stream'
 
-# بررسی فضای دیسک
+# Check disk space
 docker system df
 
-# پاک‌سازی فضای اضافی
+# Clean up extra space
 docker system prune -a
 
-# مشاهده network
+# View network
 docker network ls
 docker network inspect app-network
 ```
 
-### لاگ‌ها
+### Logs
 
-لاگ‌های Docker به‌صورت پیش‌فرض در `/var/lib/docker/containers/` ذخیره می‌شوند.
+By default, Docker logs are stored in `/var/lib/docker/containers/`.
 
-برای محدود کردن حجم لاگ‌ها، فایل `/etc/docker/daemon.json` ایجاد کنید:
+To limit the size of logs, create the file `/etc/docker/daemon.json`:
 
 ```json
 {
@@ -299,7 +299,7 @@ docker network inspect app-network
 }
 ```
 
-سپس Docker را ری‌استارت کنید:
+Then restart Docker:
 
 ```bash
 sudo systemctl restart docker
@@ -307,20 +307,20 @@ sudo systemctl restart docker
 
 ---
 
-# روش ۲: استقرار مستقیم با systemd
+# Method 2: Direct Deployment with systemd
 
-این روش برای اجرای مستقیم سرویس‌ها روی سرور بدون Docker است.
+This method is for running services directly on the server without Docker.
 
-## نصب وابستگی‌ها
+## Installing Dependencies
 
-### Node.js (برای Backend, Frontend, Worker)
+### Node.js (for Backend, Frontend, Worker)
 
 ```bash
-# نصب Node.js 18.x LTS
+# Install Node.js 18.x LTS
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-# بررسی نصب
+# Check the installation
 node --version
 npm --version
 ```
@@ -328,29 +328,29 @@ npm --version
 ### PostgreSQL
 
 ```bash
-# اجرای اسکریپت setup با نصب کامل
+# Run the setup script with full installation
 cd /workspace/infrastructure
 sudo ./setup_postgresql.sh
 
-# این اسکریپت:
-# - PostgreSQL 15 را نصب می‌کند
-# - دایرکتوری داده را روی SSD پیکربندی می‌کند
-# - تنظیمات بهینه برای SSD اعمال می‌کند
-# - سرویس PostgreSQL را شروع می‌کند
+# This script:
+# - Installs PostgreSQL 15
+# - Configures the data directory on the SSD
+# - Applies optimal settings for the SSD
+# - Starts the PostgreSQL service
 ```
 
 ### Redis
 
 ```bash
-# اجرای اسکریپت setup
+# Run the setup script
 cd /workspace/infrastructure
 sudo ./setup_redis.sh
 
-# رمز عبور Redis را یادداشت کنید
+# Note the Redis password
 sudo cat /etc/redis/redis-password.txt
 ```
 
-## راه‌اندازی زیرساخت
+## Infrastructure Setup
 
 ### Storage Setup
 
@@ -359,10 +359,10 @@ cd /workspace/infrastructure
 sudo STORAGE_DEVICE=/dev/sdX1 ./setup_storage.sh
 ```
 
-### پیکربندی Database
+### Database Configuration
 
 ```bash
-# ایجاد database و user
+# Create the database and user
 sudo -u postgres psql << EOF
 CREATE DATABASE myapp_production;
 CREATE USER myapp_user WITH ENCRYPTED PASSWORD 'your-secure-password';
@@ -370,11 +370,11 @@ GRANT ALL PRIVILEGES ON DATABASE myapp_production TO myapp_user;
 \q
 EOF
 
-# تست اتصال
+# Test the connection
 psql -U myapp_user -d myapp_production -h localhost -c "SELECT version();"
 ```
 
-### Build اپلیکیشن‌ها
+### Building Applications
 
 ```bash
 cd /workspace
@@ -382,7 +382,7 @@ cd /workspace
 # Backend
 cd backend
 npm install --production
-npm run build  # اگر build process دارد
+npm run build  # If there is a build process
 
 # Frontend
 cd ../frontend
@@ -392,20 +392,20 @@ npm run build
 # Worker
 cd ../worker
 npm install --production
-npm run build  # اگر build process دارد
+npm run build  # If there is a build process
 
 cd ..
 ```
 
-## پیکربندی systemd
+## systemd Configuration
 
-### 1. ایجاد فایل سرویس Backend
+### 1. Creating the Backend Service File
 
 ```bash
 sudo nano /etc/systemd/system/app-backend.service
 ```
 
-محتوا:
+Content:
 
 ```ini
 [Unit]
@@ -419,21 +419,21 @@ User=www-data
 Group=www-data
 WorkingDirectory=/workspace/backend
 
-# بارگذاری متغیرهای محیطی
+# Load environment variables
 EnvironmentFile=/workspace/.env
 EnvironmentFile=/workspace/backend/.env
 
-# متغیرهای اضافی
+# Additional variables
 Environment="NODE_ENV=production"
 Environment="POSTGRES_HOST=localhost"
 Environment="REDIS_HOST=localhost"
 
-# دستور اجرا
+# Execution command
 ExecStart=/usr/bin/node /workspace/backend/dist/index.js
-# یا برای Node.js بدون build:
+# Or for Node.js without a build:
 # ExecStart=/usr/bin/node /workspace/backend/src/index.js
 
-# ری‌استارت خودکار
+# Automatic restart
 Restart=always
 RestartSec=10
 
@@ -457,13 +457,13 @@ CPUQuota=200%
 WantedBy=multi-user.target
 ```
 
-### 2. ایجاد فایل سرویس Frontend
+### 2. Creating the Frontend Service File
 
 ```bash
 sudo nano /etc/systemd/system/app-frontend.service
 ```
 
-محتوا:
+Content:
 
 ```ini
 [Unit]
@@ -477,20 +477,20 @@ User=www-data
 Group=www-data
 WorkingDirectory=/workspace/frontend
 
-# بارگذاری متغیرهای محیطی
+# Load environment variables
 EnvironmentFile=/workspace/.env
 EnvironmentFile=/workspace/frontend/.env.local
 
-# متغیرهای اضافی
+# Additional variables
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
 
-# دستور اجرا (Next.js)
+# Execution command (Next.js)
 ExecStart=/usr/bin/npm start
-# یا برای production build:
+# Or for a production build:
 # ExecStart=/usr/bin/node /workspace/frontend/.next/standalone/server.js
 
-# ری‌استارت خودکار
+# Automatic restart
 Restart=always
 RestartSec=10
 
@@ -513,13 +513,13 @@ MemoryMax=1G
 WantedBy=multi-user.target
 ```
 
-### 3. ایجاد فایل سرویس Worker
+### 3. Creating the Worker Service File
 
 ```bash
 sudo nano /etc/systemd/system/app-worker.service
 ```
 
-محتوا:
+Content:
 
 ```ini
 [Unit]
@@ -533,20 +533,20 @@ User=www-data
 Group=www-data
 WorkingDirectory=/workspace/worker
 
-# بارگذاری متغیرهای محیطی
+# Load environment variables
 EnvironmentFile=/workspace/.env
 EnvironmentFile=/workspace/worker/.env
 
-# متغیرهای اضافی
+# Additional variables
 Environment="NODE_ENV=production"
 Environment="POSTGRES_HOST=localhost"
 Environment="REDIS_HOST=localhost"
 Environment="WORKER_CONCURRENCY=5"
 
-# دستور اجرا
+# Execution command
 ExecStart=/usr/bin/node /workspace/worker/dist/index.js
 
-# ری‌استارت خودکار
+# Automatic restart
 Restart=always
 RestartSec=10
 
@@ -570,7 +570,7 @@ CPUQuota=400%
 WantedBy=multi-user.target
 ```
 
-### 4. ایجاد دایرکتوری لاگ
+### 4. Creating the Log Directory
 
 ```bash
 sudo mkdir -p /var/log/app
@@ -578,15 +578,15 @@ sudo chown www-data:www-data /var/log/app
 sudo chmod 755 /var/log/app
 ```
 
-### 5. تنظیم مجوزها
+### 5. Setting Permissions
 
 ```bash
-# اطمینان از مجوزهای صحیح
+# Ensure correct permissions
 sudo chown -R www-data:www-data /workspace/backend
 sudo chown -R www-data:www-data /workspace/frontend
 sudo chown -R www-data:www-data /workspace/worker
 
-# فایل‌های .env نباید برای همه قابل خواندن باشند
+# .env files should not be readable by everyone
 sudo chmod 640 /workspace/.env
 sudo chmod 640 /workspace/backend/.env
 sudo chmod 640 /workspace/frontend/.env.local
@@ -597,138 +597,138 @@ sudo chown www-data:www-data /workspace/frontend/.env.local
 sudo chown www-data:www-data /workspace/worker/.env
 ```
 
-## مدیریت سرویس‌ها
+## Service Management
 
-### فعال‌سازی و شروع سرویس‌ها
+### Enabling and Starting Services
 
 ```bash
-# بارگذاری مجدد systemd
+# Reload systemd
 sudo systemctl daemon-reload
 
-# فعال‌سازی برای شروع خودکار
+# Enable for automatic start
 sudo systemctl enable app-backend.service
 sudo systemctl enable app-frontend.service
 sudo systemctl enable app-worker.service
 
-# شروع سرویس‌ها
+# Start services
 sudo systemctl start app-backend.service
 sudo systemctl start app-frontend.service
 sudo systemctl start app-worker.service
 
-# بررسی وضعیت
+# Check status
 sudo systemctl status app-backend.service
 sudo systemctl status app-frontend.service
 sudo systemctl status app-worker.service
 ```
 
-### دستورات مدیریتی
+### Management Commands
 
 ```bash
-# مشاهده لاگ‌ها
+# View logs
 sudo journalctl -u app-backend.service -f
 sudo journalctl -u app-frontend.service -f
 sudo journalctl -u app-worker.service -f
 
-# یا لاگ‌های فایل
+# Or file logs
 tail -f /var/log/app/backend.log
 tail -f /var/log/app/frontend.log
 tail -f /var/log/app/worker.log
 
-# ری‌استارت سرویس
+# Restart a service
 sudo systemctl restart app-backend.service
 sudo systemctl restart app-frontend.service
 sudo systemctl restart app-worker.service
 
-# متوقف کردن
+# Stop
 sudo systemctl stop app-backend.service
 sudo systemctl stop app-frontend.service
 sudo systemctl stop app-worker.service
 
-# غیرفعال کردن شروع خودکار
+# Disable automatic start
 sudo systemctl disable app-backend.service
 ```
 
-### مشاهده وضعیت کلی
+### Viewing Overall Status
 
 ```bash
-# وضعیت تمام سرویس‌های اپلیکیشن
+# Status of all application services
 systemctl status 'app-*'
 
-# لیست تمام سرویس‌های در حال اجرا
+# List all running services
 systemctl list-units --type=service --state=running | grep app-
 ```
 
 ---
 
-# مانیتورینگ و لاگ‌ها
+# Monitoring and Logs
 
-## مانیتورینگ منابع سیستم
+## Monitoring System Resources
 
-### استفاده از htop
+### Using htop
 
 ```bash
 sudo apt-get install htop
 htop
 ```
 
-### مانیتورینگ دیسک
+### Disk Monitoring
 
 ```bash
-# فضای استفاده شده
+# Used space
 df -h
 
-# استفاده از inode
+# Inode usage
 df -i
 
-# فضای استفاده شده توسط /storage
+# Space used by /storage
 du -sh /storage/*
 
-# بزرگ‌ترین فایل‌ها
+# Largest files
 find /storage -type f -exec du -h {} + | sort -rh | head -n 20
 ```
 
-### مانیتورینگ PostgreSQL
+### PostgreSQL Monitoring
 
 ```bash
-# اتصالات فعال
+# Active connections
 sudo -u postgres psql -c "SELECT count(*) FROM pg_stat_activity;"
 
-# حجم دیتابیس
+# Database size
 sudo -u postgres psql -c "SELECT pg_database.datname, pg_size_pretty(pg_database_size(pg_database.datname)) AS size FROM pg_database;"
 
-# کوئری‌های آهسته
+# Slow queries
 sudo -u postgres psql -d myapp_production -c "SELECT query, calls, total_time, mean_time FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
 ```
 
-### مانیتورینگ Redis
+### Redis Monitoring
 
 ```bash
-# اطلاعات کلی
+# General information
 redis-cli -a $(sudo cat /etc/redis/redis-password.txt) INFO
 
-# استفاده از حافظه
+# Memory usage
 redis-cli -a $(sudo cat /etc/redis/redis-password.txt) INFO memory
 
-# تعداد کلیدها
+# Number of keys
 redis-cli -a $(sudo cat /etc/redis/redis-password.txt) DBSIZE
 
-# مانیتور real-time
+# Real-time monitor
 redis-cli -a $(sudo cat /etc/redis/redis-password.txt) MONITOR
 ```
 
-## مدیریت لاگ‌ها
+## Log Management
 
 ### Log Rotation
 
-برای Docker Compose، لاگ‌ها به‌صورت خودکار rotate می‌شوند (اگر در `daemon.json` تنظیم کرده باشید).
+For Docker Compose, logs are automatically rotated (if configured in `daemon.json`).
 
-برای systemd:
+For systemd:
 
 ```bash
 sudo nano /etc/logrotate.d/app
 ```
 
-محتوا:
+Content:
 
 ```
 /var/log/app/*.log {
@@ -745,7 +745,7 @@ sudo nano /etc/logrotate.d/app
 }
 ```
 
-تست:
+Test:
 
 ```bash
 sudo logrotate -f /etc/logrotate.d/app
@@ -753,32 +753,32 @@ sudo logrotate -f /etc/logrotate.d/app
 
 ---
 
-# پشتیبان‌گیری
+# Backup
 
 ## PostgreSQL Backup
 
-### Backup دستی
+### Manual Backup
 
 ```bash
-# Backup کامل دیتابیس
+# Full database backup
 sudo -u postgres pg_dump myapp_production > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Backup فشرده
+# Compressed backup
 sudo -u postgres pg_dump myapp_production | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
 
 # Restore
 sudo -u postgres psql myapp_production < backup.sql
-# یا برای فایل فشرده:
+# Or for a compressed file:
 gunzip -c backup.sql.gz | sudo -u postgres psql myapp_production
 ```
 
-### Backup خودکار با Cron
+### Automatic Backup with Cron
 
 ```bash
 sudo nano /usr/local/bin/backup-postgres.sh
 ```
 
-محتوا:
+Content:
 
 ```bash
 #!/bin/bash
@@ -791,178 +791,178 @@ mkdir -p "$BACKUP_DIR"
 # Backup
 sudo -u postgres pg_dump myapp_production | gzip > "$BACKUP_DIR/backup_$DATE.sql.gz"
 
-# حذف backup های قدیمی
+# Remove old backups
 find "$BACKUP_DIR" -name "backup_*.sql.gz" -mtime +$RETENTION_DAYS -delete
 
 echo "Backup completed: backup_$DATE.sql.gz"
 ```
 
-مجوز اجرا و افزودن به Cron:
+Grant execution permission and add to Cron:
 
 ```bash
 sudo chmod +x /usr/local/bin/backup-postgres.sh
 
-# افزودن به cron (هر روز ساعت 2 صبح)
+# Add to cron (every day at 2 AM)
 sudo crontab -e
-# اضافه کنید:
+# Add:
 0 2 * * * /usr/local/bin/backup-postgres.sh >> /var/log/app/backup.log 2>&1
 ```
 
 ## Redis Backup
 
-Redis به‌صورت خودکار snapshot ذخیره می‌کند (`appendonly.aof` و `dump.rdb`).
+Redis automatically saves snapshots (`appendonly.aof` and `dump.rdb`).
 
-برای backup دستی:
+For a manual backup:
 
 ```bash
-# Trigger کردن save
+# Trigger save
 redis-cli -a $(sudo cat /etc/redis/redis-password.txt) BGSAVE
 
-# کپی فایل‌های داده
+# Copy data files
 sudo cp /var/lib/redis/dump.rdb /storage/backups/redis/dump_$(date +%Y%m%d).rdb
 ```
 
 ## Application Files Backup
 
 ```bash
-# Backup کد اپلیکیشن
+# Backup application code
 tar -czf app_backup_$(date +%Y%m%d).tar.gz /workspace
 
-# Backup فایل‌های آپلود شده
+# Backup uploaded files
 rsync -av --progress /storage/uploads/ /storage/backups/uploads/
 ```
 
 ---
 
-# عیب‌یابی
+# Troubleshooting
 
-## مشکلات رایج
+## Common Problems
 
-### سرویس start نمی‌شود (Docker)
+### Service does not start (Docker)
 
 ```bash
-# بررسی لاگ‌ها
+# Check logs
 docker compose logs [service_name]
 
-# بررسی وضعیت container
+# Check container status
 docker compose ps
 
-# بررسی health check
+# Check health check
 docker inspect [container_name] | grep -A 10 Health
 
-# ری‌استارت با build مجدد
+# Restart with rebuild
 docker compose down
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### سرویس start نمی‌شود (systemd)
+### Service does not start (systemd)
 
 ```bash
-# بررسی دقیق وضعیت
+# Check detailed status
 sudo systemctl status app-backend.service -l
 
-# بررسی لاگ‌ها
+# Check logs
 sudo journalctl -u app-backend.service -n 100 --no-pager
 
-# بررسی فایل سرویس
+# Verify the service file
 sudo systemd-analyze verify /etc/systemd/system/app-backend.service
 
-# تست دستی
+# Manual test
 cd /workspace/backend
 sudo -u www-data node dist/index.js
 ```
 
-### خطای اتصال به Database
+### Database connection error
 
 ```bash
-# بررسی اینکه PostgreSQL در حال اجرا است
+# Check that PostgreSQL is running
 sudo systemctl status postgresql
 
-# تست اتصال
+# Test the connection
 psql -U myapp_user -d myapp_production -h localhost
 
-# بررسی تنظیمات اتصال
+# Check connection settings
 cat /workspace/.env | grep POSTGRES
 
-# بررسی لاگ PostgreSQL
+# Check PostgreSQL log
 sudo tail -f /var/log/postgresql/postgresql-15-main.log
 ```
 
-### خطای اتصال به Redis
+### Redis connection error
 
 ```bash
-# بررسی وضعیت Redis
+# Check Redis status
 sudo systemctl status redis-server
 
-# تست اتصال
+# Test the connection
 redis-cli -a $(sudo cat /etc/redis/redis-password.txt) PING
 
-# بررسی پورت
+# Check the port
 sudo netstat -tlnp | grep 6379
 
-# بررسی لاگ
+# Check the log
 sudo tail -f /var/log/redis/redis-server.log
 ```
 
-### فضای دیسک پر شده
+### Disk space full
 
 ```bash
-# بررسی استفاده از دیسک
+# Check disk usage
 df -h
 
-# پیدا کردن فایل‌های بزرگ
+# Find large files
 du -sh /var/lib/docker/* | sort -rh | head -n 10
 du -sh /storage/* | sort -rh | head -n 10
 
-# پاک‌سازی Docker (اگر از Docker استفاده می‌کنید)
+# Clean up Docker (if using Docker)
 docker system prune -a --volumes
 
-# پاک‌سازی لاگ‌های قدیمی
+# Clean up old logs
 sudo journalctl --vacuum-time=7d
 sudo find /var/log -name "*.log" -mtime +30 -delete
 ```
 
-### مشکلات Performance
+### Performance issues
 
 ```bash
-# بررسی CPU و RAM
+# Check CPU and RAM
 top
 htop
 
-# بررسی I/O دیسک
+# Check disk I/O
 iostat -x 1
 
-# بررسی اتصالات شبکه
+# Check network connections
 sudo netstat -tunap | grep ESTABLISHED | wc -l
 
-# بررسی query های آهسته PostgreSQL
+# Check slow PostgreSQL queries
 sudo -u postgres psql -d myapp_production -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
 ```
 
-### Port در حال استفاده است
+### Port in use
 
 ```bash
-# پیدا کردن process که پورت را استفاده می‌کند
+# Find the process using the port
 sudo lsof -i :8000
 sudo netstat -tlnp | grep :8000
 
-# Kill کردن process
+# Kill the process
 sudo kill -9 [PID]
 ```
 
-## دریافت کمک
+## Getting Help
 
-اگر مشکل حل نشد:
+If the problem is not resolved:
 
-1. لاگ‌های کامل را جمع‌آوری کنید
-2. تنظیمات سیستم را بررسی کنید
-3. نسخه‌های نرم‌افزار را چک کنید
-4. با تیم توسعه تماس بگیرید
+1. Collect the complete logs
+2. Check the system settings
+3. Check the software versions
+4. Contact the development team
 
 ---
 
-## منابع اضافی
+## Additional Resources
 
 - [Docker Documentation](https://docs.docker.com/)
 - [Docker Compose Reference](https://docs.docker.com/compose/compose-file/)
@@ -972,5 +972,5 @@ sudo kill -9 [PID]
 
 ---
 
-**تاریخ آخرین بروزرسانی**: 2025-10-21  
-**نسخه**: 1.0
+**Last Updated**: 2025-10-21
+**Version**: 1.0

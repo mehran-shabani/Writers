@@ -62,18 +62,20 @@ ENABLE_RESOURCE_MONITORING = os.getenv("ENABLE_RESOURCE_MONITORING", "true").low
 
 
 class ModelSingleton:
-    """
-    Singleton pattern for model initialization to reduce warm start time.
-    
-    This class ensures that the transcription model is loaded only once
-    and reused across multiple tasks, significantly reducing initialization
-    overhead and improving performance.
-    
-    Configuration:
-    - MODEL_DEVICE: Device to use (cuda/cpu)
-    - MODEL_DEVICE_INDEX: GPU index for multi-GPU systems
-    - MODEL_COMPUTE_TYPE: Computation type (float16/int8/float32)
-    - MODEL_NAME: Model size (tiny/base/small/medium/large)
+    """Manages the lifecycle of a transcription model to optimize performance.
+
+    This class implements the singleton pattern to ensure that the transcription
+    model is loaded into memory only once. This approach significantly reduces
+    the overhead of model initialization for subsequent tasks, leading to
+    faster "warm start" times.
+
+    The model's configuration, such as the device (CPU/GPU), compute type, and
+    model size, is determined by environment variables.
+
+    Attributes:
+        _instance: The single instance of the ModelSingleton class.
+        _lock: A thread lock to ensure thread-safe initialization.
+        _model: The loaded transcription model.
     """
     
     _instance = None
@@ -88,11 +90,10 @@ class ModelSingleton:
         return cls._instance
     
     def get_model(self):
-        """
-        Get or initialize the transcription model.
-        
+        """Retrieves the transcription model, initializing it if necessary.
+
         Returns:
-            Model instance ready for transcription
+            The transcription model instance.
         """
         if self._model is None:
             with self._lock:
@@ -101,12 +102,7 @@ class ModelSingleton:
         return self._model
     
     def _initialize_model(self):
-        """
-        Initialize the transcription model with specified configuration.
-        
-        This method is called only once during the first model access.
-        Subsequent calls will reuse the initialized model.
-        """
+        """Initializes the transcription model based on environment settings."""
         logger.info(
             f"Initializing transcription model: {MODEL_NAME} on "
             f"{MODEL_DEVICE}:{MODEL_DEVICE_INDEX} with {MODEL_COMPUTE_TYPE}"
@@ -150,12 +146,14 @@ model_singleton = ModelSingleton()
 # =============================================================================
 
 def get_gpu_memory_info() -> Optional[Dict[str, Any]]:
-    """
-    Get GPU memory usage information using nvidia-smi.
-    
+    """Retrieves GPU memory and utilization information.
+
+    This function uses the `nvidia-smi` command to query the memory usage and
+    utilization of a specific GPU.
+
     Returns:
-        dict: GPU memory info with total, used, free memory in MB
-        None: If NVIDIA GPU is not available or command fails
+        A dictionary containing GPU memory and utilization details, or None if
+        the information cannot be retrieved.
     """
     try:
         import subprocess
@@ -186,12 +184,11 @@ def get_gpu_memory_info() -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_ram_memory_info() -> Dict[str, Any]:
-    """
-    Get system RAM usage information.
-    
+def get_ram_memory_info() -> Dict[str, Any]]:
+    """Retrieves system RAM information.
+
     Returns:
-        dict: RAM memory info with total, used, available memory
+        A dictionary containing details about the system's RAM usage.
     """
     mem = psutil.virtual_memory()
     return {
@@ -204,11 +201,11 @@ def get_ram_memory_info() -> Dict[str, Any]:
 
 
 def log_resource_usage(context: str = ""):
-    """
-    Log current resource usage (VRAM and RAM).
-    
+    """Logs the current VRAM and RAM usage.
+
     Args:
-        context: Context string to identify where logging is called from
+        context (str): A string indicating the context in which the resource
+                       usage is being logged.
     """
     if not ENABLE_RESOURCE_MONITORING:
         return
@@ -235,11 +232,10 @@ def log_resource_usage(context: str = ""):
 
 
 def check_available_resources():
-    """
-    Check if there are enough resources available to prevent OOM.
-    
-    Raises:
-        RuntimeError: If memory usage exceeds warning thresholds
+    """Checks for sufficient system resources to prevent OOM errors.
+
+    This function logs a warning if RAM or VRAM usage exceeds predefined
+    thresholds, indicating a risk of an Out Of Memory (OOM) error.
     """
     if not ENABLE_RESOURCE_MONITORING:
         return
@@ -269,15 +265,14 @@ def check_available_resources():
 
 
 def update_task_in_db(task_id: UUID, **fields) -> bool:
-    """
-    Update task fields in database.
-    
+    """Updates a task's information in the database.
+
     Args:
-        task_id: UUID of the task
-        **fields: Fields to update (status, result_path, completed_at, etc.)
-        
+        task_id (UUID): The ID of the task to update.
+        **fields: The fields of the task to update.
+
     Returns:
-        bool: True if successful, False otherwise
+        bool: True if the update was successful, otherwise False.
     """
     try:
         SessionLocal = get_session_local()
@@ -307,19 +302,16 @@ def update_task_in_db(task_id: UUID, **fields) -> bool:
 
 
 def process_audio_transcription(audio_path: str) -> Dict[str, Any]:
-    """
-    Process audio file and perform transcription using singleton model.
-    
-    In production, this would integrate with services like:
-    - OpenAI Whisper (recommended)
-    - Google Speech-to-Text
-    - AWS Transcribe
-    
+    """Transcribes an audio file using the singleton model.
+
+    This function simulates the audio transcription process. In a production
+    environment, it would use a speech-to-text model like OpenAI's Whisper.
+
     Args:
-        audio_path: Path to the audio file
-        
+        audio_path (str): The path to the audio file.
+
     Returns:
-        dict: Transcription result with metadata
+        Dict[str, Any]: A dictionary containing the transcription result.
     """
     logger.info(f"Processing audio file: {audio_path}")
     
@@ -383,24 +375,18 @@ def process_audio_transcription(audio_path: str) -> Dict[str, Any]:
 
 @celery_app.task(name="transcribe_audio", bind=True)
 def transcribe_audio(self, task_id: str, audio_file_path: str) -> Dict[str, Any]:
-    """
-    Transcribe audio file to text using optimized singleton model.
-    
-    This task:
-    1. Updates database status to PROCESSING
-    2. Checks available resources (VRAM/RAM) to prevent OOM
-    3. Reads the audio file from /storage/uploads/
-    4. Performs transcription using singleton model (warm start)
-    5. Saves output to /storage/results/
-    6. Updates result_path, completed_at, and status=COMPLETED
-    7. On error, sets status=FAILED and logs appropriately
-    
+    """Celery task for transcribing audio files.
+
+    This task orchestrates the audio transcription process. It updates the task
+    status in the database, processes the audio file, saves the result, and
+    handles any errors that occur.
+
     Args:
-        task_id: UUID of the task as string
-        audio_file_path: Relative path to the audio file in uploads directory
-        
+        task_id (str): The ID of the task.
+        audio_file_path (str): The path to the audio file to be transcribed.
+
     Returns:
-        dict: Result of transcription with status and metadata
+        Dict[str, Any]: A dictionary with the result of the transcription.
     """
     task_uuid = UUID(task_id)
     logger.info(f"Starting audio transcription for task {task_id}")
