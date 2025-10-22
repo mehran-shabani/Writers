@@ -22,7 +22,10 @@ describe('API Proxy Routes', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        json: async () => ({ id: 1, email: 'test@example.com', username: 'testuser' }),
+        json: async () => ({
+          user: { id: 1, email: 'test@example.com', username: 'testuser' },
+          token_type: 'bearer',
+        }),
         headers: new Headers({
           'set-cookie': 'access_token=abc123; HttpOnly; Secure',
         }),
@@ -46,7 +49,8 @@ describe('API Proxy Routes', () => {
         })
       );
       expect(response.status).toBe(200);
-      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('user');
+      expect(data.user).toHaveProperty('id');
       expect(response.headers.get('set-cookie')).toContain('access_token');
     });
 
@@ -93,7 +97,10 @@ describe('API Proxy Routes', () => {
       const mockResponse = {
         ok: true,
         status: 201,
-        json: async () => ({ id: 1, email: 'new@example.com', username: 'newuser' }),
+        json: async () => ({
+          user: { id: 1, email: 'new@example.com', username: 'newuser' },
+          token_type: 'bearer',
+        }),
         headers: new Headers({
           'set-cookie': 'access_token=xyz789; HttpOnly; Secure',
         }),
@@ -114,7 +121,8 @@ describe('API Proxy Routes', () => {
       const data = await response.json();
 
       expect(response.status).toBe(201);
-      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('user');
+      expect(data.user).toHaveProperty('id');
       expect(response.headers.get('set-cookie')).toContain('access_token');
     });
   });
