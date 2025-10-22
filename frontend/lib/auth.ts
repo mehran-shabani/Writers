@@ -1,5 +1,5 @@
 import api from './api';
-import { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types/auth';
+import { LoginRequest, RegisterRequest, AuthTokenResponse, User } from '@/types/auth';
 
 export const authService = {
   /**
@@ -8,8 +8,8 @@ export const authService = {
    * @returns The authenticated user.
    */
   async login(credentials: LoginRequest): Promise<User> {
-    const response = await api.post<AuthResponse>('/auth/login', credentials);
-    return response.data;
+    const response = await api.post<AuthTokenResponse>('/auth/login', credentials);
+    return response.data.user;
   },
 
   /**
@@ -18,8 +18,8 @@ export const authService = {
    * @returns The newly registered user.
    */
   async register(data: RegisterRequest): Promise<User> {
-    const response = await api.post<AuthResponse>('/auth/register', data);
-    return response.data;
+    const response = await api.post<AuthTokenResponse>('/auth/register', data);
+    return response.data.user;
   },
 
   /**
