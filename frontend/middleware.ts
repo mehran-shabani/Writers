@@ -4,6 +4,9 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/register'];
+  
   // Check if the route is protected (dashboard or other protected routes)
   const isProtectedRoute = pathname.startsWith('/dashboard');
   
@@ -20,6 +23,11 @@ export function middleware(request: NextRequest) {
   // Redirect to dashboard if accessing login/register with valid token
   if ((pathname === '/login' || pathname === '/register') && accessToken) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // Allow access to root path (landing page) for all users
+  if (pathname === '/') {
+    return NextResponse.next();
   }
 
   return NextResponse.next();

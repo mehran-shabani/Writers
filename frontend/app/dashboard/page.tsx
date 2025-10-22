@@ -78,51 +78,23 @@ export default function DashboardPage() {
     }).format(date);
   };
 
-  if (loading) {
-    return (
-      <div className="loading">
-        <p>در حال بارگذاری...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="container">
-          <h1>داشبورد</h1>
-          <div className="user-info">
-            <span className="user-name">
-              {user.full_name || user.username}
-            </span>
-            <button onClick={handleLogout} className="btn-logout">
-              خروج
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="dashboard-content">
-        <div className="container">
-          {/* User Info Card */}
-          <div className="card" style={{ marginBottom: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2>خوش آمدید!</h2>
+    <div className="container">
+          {/* Welcome Card */}
+          <div className="welcome-card">
+            <div className="welcome-content">
+              <div className="welcome-text">
+                <h2>خوش آمدید!</h2>
+                <p>به سیستم مدیریت وظایف خود خوش آمدید. از اینجا می‌توانید وظایف خود را مدیریت کنید.</p>
+              </div>
               <button 
                 onClick={() => router.push('/dashboard/upload')} 
-                className="btn btn-primary"
-                style={{ width: 'auto', padding: '0.875rem 2rem' }}
+                className="btn btn-primary btn-upload"
               >
+                <span className="btn-icon">📤</span>
                 آپلود فایل جدید
               </button>
             </div>
-            <p>
-              <strong>ایمیل:</strong> {user.email} | <strong>نام کاربری:</strong> {user.username}
-            </p>
           </div>
 
           {/* Tasks Section */}
@@ -218,7 +190,5 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-      </div>
-    </div>
   );
 }
