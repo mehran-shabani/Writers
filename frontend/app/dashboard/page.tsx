@@ -66,6 +66,14 @@ export default function DashboardPage() {
             <p>
               <strong>نقش:</strong> {user.is_superuser ? 'مدیر' : 'کاربر عادی'}
             </p>
+            <br />
+            <button 
+              onClick={() => router.push('/dashboard/upload')} 
+              className="btn btn-primary"
+              style={{ width: 'auto', padding: '0.875rem 2rem' }}
+            >
+              آپلود فایل صوتی
+            </button>
           </div>
         </div>
       </div>

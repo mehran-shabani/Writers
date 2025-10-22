@@ -686,6 +686,7 @@ npm start
 - **`/login`**: Login page with email/password form
 - **`/register`**: Registration page with user details form
 - **`/dashboard`**: Protected dashboard page (requires authentication)
+- **`/dashboard/upload`**: Audio file upload page with drag-and-drop support
 
 ### Middleware Protection
 
@@ -731,6 +732,50 @@ The frontend uses Axios with interceptors for API communication:
 - **Error Handling**: Automatic 401 handling and redirect
 - **Headers**: JSON content type by default
 
+### Audio File Upload
+
+The frontend includes a dedicated upload page (`/dashboard/upload`) for uploading audio files with the following features:
+
+#### Features
+
+- **Drag-and-Drop Support**: Intuitive dropzone interface for easy file selection
+- **File Type Validation**: Accepts only audio files (MP3, WAV, M4A, AAC, OGG, FLAC)
+- **File Size Limit**: Maximum 100MB per file
+- **Real-time Upload Progress**: Visual progress bar showing upload percentage
+- **Status Management**: Clear feedback for uploading, success, and error states
+- **Auto-redirect**: Automatically redirects to dashboard after successful upload
+- **Form Integration**: Title (required) and description (optional) fields
+- **Auto-fill Title**: Automatically extracts filename as title suggestion
+
+#### Usage
+
+1. Navigate to `/dashboard/upload`
+2. Drag and drop an audio file or click to browse
+3. File is validated for type and size
+4. Enter title (auto-filled from filename) and optional description
+5. Click "آپلود فایل" to upload
+6. Monitor upload progress
+7. Automatically redirected to dashboard after successful upload
+
+#### Technical Details
+
+- **API Endpoint**: `POST /api/v1/tasks`
+- **Content Type**: `multipart/form-data`
+- **Request Format**:
+  - `file`: Audio file (required)
+  - `title`: Task title (required)
+  - `description`: Task description (optional)
+- **Response**: Returns task object with `202 Accepted` status
+- **Background Processing**: File is queued for transcription via Celery
+
+#### Validation Rules
+
+- **Accepted Formats**: `.mp3`, `.wav`, `.m4a`, `.aac`, `.ogg`, `.flac`
+- **Accepted MIME Types**: `audio/mpeg`, `audio/mp3`, `audio/wav`, `audio/wave`, `audio/x-wav`, `audio/aac`, `audio/m4a`, `audio/x-m4a`, `audio/ogg`, `audio/flac`
+- **Maximum Size**: 100MB (104,857,600 bytes)
+- **Title**: Required, 1-255 characters
+- **Description**: Optional
+
 ### Styling
 
 The application uses custom CSS with:
@@ -740,6 +785,7 @@ The application uses custom CSS with:
 - Responsive design
 - Persian/Farsi language support
 - Clean and intuitive UI
+- Drag-and-drop upload interface with visual feedback
 
 ## Dependencies
 
