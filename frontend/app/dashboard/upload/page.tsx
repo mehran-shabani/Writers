@@ -177,6 +177,7 @@ export default function UploadPage() {
   if (authLoading) {
     return (
       <div className="loading">
+        <div className="spinner-large"></div>
         <p>در حال بارگذاری...</p>
       </div>
     );
@@ -187,21 +188,20 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="container">
-          <h1>آپلود فایل صوتی</h1>
-          <div className="user-info">
-            <span className="user-name">{user.full_name || user.username}</span>
-            <button onClick={() => router.push('/dashboard')} className="btn-back">
-              بازگشت به داشبورد
-            </button>
+    <div className="container">
+      <div className="page-header">
+        <div className="page-header-content">
+          <div>
+            <h1 className="page-title">آپلود فایل صوتی</h1>
+            <p className="page-subtitle">فایل صوتی خود را برای پردازش آپلود کنید</p>
           </div>
+          <button onClick={() => router.push('/dashboard')} className="btn-back">
+            ← بازگشت به داشبورد
+          </button>
         </div>
-      </header>
+      </div>
 
-      <div className="dashboard-content">
-        <div className="container">
+      <div className="page-content">
           <div className="upload-card">
             {/* Dropzone */}
             <div
@@ -362,6 +362,5 @@ export default function UploadPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

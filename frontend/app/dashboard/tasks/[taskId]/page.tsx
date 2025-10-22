@@ -221,6 +221,7 @@ export default function TaskDetailPage() {
   if (loading) {
     return (
       <div className="loading">
+        <div className="spinner-large"></div>
         <p>در حال بارگذاری...</p>
       </div>
     );
@@ -231,23 +232,23 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button 
-              onClick={() => router.push('/dashboard')} 
-              className="btn-back"
-            >
-              ← بازگشت
-            </button>
-            <h1>جزئیات وظیفه</h1>
+    <div className="container">
+      <div className="page-header">
+        <div className="page-header-content">
+          <div>
+            <h1 className="page-title">جزئیات وظیفه</h1>
+            <p className="page-subtitle">مشاهده و ویرایش اطلاعات وظیفه</p>
           </div>
+          <button 
+            onClick={() => router.push('/dashboard')} 
+            className="btn-back"
+          >
+            ← بازگشت به داشبورد
+          </button>
         </div>
-      </header>
+      </div>
 
-      <div className="dashboard-content">
-        <div className="container">
+      <div className="page-content">
           {error && (
             <div className="card">
               <div className="error-message">
@@ -526,6 +527,5 @@ export default function TaskDetailPage() {
           )}
         </div>
       </div>
-    </div>
   );
 }
