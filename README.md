@@ -265,6 +265,35 @@ Authentication: Required (Cookie: access_token)
 
 Returns a specific task by UUID. Returns `403 Forbidden` if the task doesn't belong to the authenticated user.
 
+#### Get Task Transcription Result
+```http
+GET /api/v1/tasks/{task_id}/result
+Authentication: Required (Cookie: access_token)
+```
+
+Returns the transcription result for a completed task. The endpoint:
+- Returns JSON with transcription data including text, language, duration, confidence, and metadata
+- Validates task ownership and completion status
+- Returns `400 Bad Request` if task is not completed
+- Returns `404 Not Found` if result file doesn't exist
+
+**Response Format:**
+```json
+{
+  "transcription": "متن رونویسی صوتی...",
+  "language": "fa",
+  "duration": 120,
+  "confidence": 0.95,
+  "timestamp": "2024-01-01T12:00:00",
+  "source_file": "audio.mp3",
+  "model_config": {
+    "name": "base",
+    "device": "cuda",
+    "compute_type": "float16"
+  }
+}
+```
+
 ### Background Processing with Celery
 
 When a file is uploaded with a task, the system:
@@ -805,18 +834,54 @@ The dashboard page (`/dashboard`) provides a comprehensive task management inter
 
 #### Task Details Page
 
-The task details page (`/dashboard/tasks/[taskId]`) provides comprehensive information about individual tasks:
+The task details page (`/dashboard/tasks/[taskId]`) provides comprehensive information about individual tasks with integrated rich text editing capabilities:
 
-**Features:**
+**Core Features:**
 - **Full Task Information**: Title, description, status, and all timestamps
 - **Real-time Updates**: Polls every 10 seconds to show latest task status
 - **Manual Refresh**: Button to manually refresh task details
 - **File Information**: Shows input file and result file availability
-- **Comprehensive Metadata**: Created time, updated time, due date, completion time
-- **File Paths**: Displays full file paths for uploaded and result files
-- **Task IDs**: Shows task ID and user ID for reference
-- **Download Action**: Download button for completed tasks with results (ready for implementation)
+- **Comprehensive Metadata Display**:
+  - Task status with color-coded badges
+  - Created time, updated time, completion time
+  - Processing duration calculation (shows hours, minutes, seconds)
+  - Transcription metadata (language, duration, confidence score)
+  - Model configuration details
 - **Error Handling**: Graceful handling of missing or unauthorized tasks
+
+**Rich Text Editor Integration (Tiptap):**
+
+For completed tasks with transcription results, the page includes a powerful rich text editor:
+
+- **Editor Features**:
+  - **Tiptap Editor**: Modern WYSIWYG editor with full formatting support
+  - **Rich Toolbar**: Complete formatting toolbar with buttons for:
+    - Text formatting: Bold, Italic, Strikethrough
+    - Headings: H1, H2 levels
+    - Lists: Bullet lists and numbered lists
+    - Undo/Redo functionality
+  - **Live Editing**: Real-time text editing with Persian/Farsi support
+  - **Auto-load Transcription**: Automatically loads transcription result when task completes
+  - **Edit Tracking**: Visual indicator for unsaved changes
+  - **RTL Support**: Right-to-left text direction for Persian content
+
+- **Download Capabilities**:
+  - **Markdown Export**: Download transcription as `.md` file with formatting
+  - **PDF Export**: Generate and download PDF version of transcription
+  - **Preserve Formatting**: Maintains text structure in exported files
+
+- **Data Management**:
+  - **Local Save**: Save edited content to browser's localStorage
+  - **State Management**: Tracks edited vs. original content
+  - **Auto-fetch**: Automatically retrieves transcription from backend API
+  - **API Endpoint**: `/api/v1/tasks/{task_id}/result` fetches processed results
+
+**Technical Implementation:**
+- **Editor Library**: Tiptap with StarterKit and Typography extensions
+- **Export Libraries**: jsPDF for PDF generation, native Blob API for Markdown
+- **Styling**: Custom CSS with responsive design and Persian font support
+- **State Management**: React hooks for content and edit state tracking
+- **API Integration**: Fetches JSON transcription results from backend
 
 #### Data Fetching with SWR
 
@@ -874,3 +939,5 @@ The application uses custom CSS with:
 - **Axios**: HTTP client for API requests
 - **SWR**: React Hooks library for data fetching with caching and real-time updates
 - **js-cookie**: Cookie manipulation (for client-side reading if needed)
+- **Tiptap**: Headless rich text editor with React integration
+- **jsPDF**: Client-side PDF generation for exports

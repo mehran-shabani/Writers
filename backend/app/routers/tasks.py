@@ -1,8 +1,10 @@
 import os
+import json
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
 
 from ..db import get_session
@@ -172,3 +174,75 @@ async def get_task(
         )
     
     return TaskResponse.model_validate(task)
+
+
+@router.get("/{task_id}/result")
+async def get_task_result(
+    task_id: UUID,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """
+    Get the transcription result for a specific task.
+    
+    Args:
+        task_id: UUID of the task
+        session: Database session
+        current_user: Authenticated user
+    
+    Returns:
+        JSON with transcription result
+    
+    Raises:
+        HTTPException: If task not found, user doesn't have access, or result not ready
+    """
+    statement = select(Task).where(Task.id == task_id)
+    task = session.exec(statement).first()
+    
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found"
+        )
+    
+    # Check if user has access to this task
+    if task.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this task"
+        )
+    
+    # Check if task is completed and has a result
+    if task.status != TaskStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task is not completed yet. Current status: {task.status}"
+        )
+    
+    if not task.result_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Result file not found for this task"
+        )
+    
+    # Read and return the result file
+    try:
+        if os.path.exists(task.result_path):
+            with open(task.result_path, 'r', encoding='utf-8') as f:
+                result_data = json.load(f)
+            return result_data
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Result file not found on disk"
+            )
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to parse result file"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error reading result file: {str(e)}"
+        )
