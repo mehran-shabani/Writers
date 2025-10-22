@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
     // Forward query parameters
     const searchParams = request.nextUrl.searchParams;
     const queryString = searchParams.toString();
-    const url = `${BACKEND_URL}/tasks${queryString ? `?${queryString}` : ''}`;
+    const url = `${BACKEND_URL}/api/v1/tasks${
+      queryString ? `?${queryString}` : ''
+    }`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Get tasks proxy error:', error);
     return NextResponse.json(
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
       headers['Content-Type'] = 'application/json';
     }
 
-    const response = await fetch(`${BACKEND_URL}/tasks`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/tasks`, {
       method: 'POST',
       headers,
       body,
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Create task proxy error:', error);
     return NextResponse.json(
