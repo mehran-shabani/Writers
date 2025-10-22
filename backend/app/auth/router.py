@@ -7,6 +7,7 @@ from ..models.user import User
 from .schemas import UserRegister, UserLogin, UserResponse, TokenResponse
 from .utils import hash_password, verify_password
 from .jwt import create_access_token, create_refresh_token
+from .dependencies import get_current_active_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -170,6 +171,22 @@ async def login(
     return TokenResponse(
         user=UserResponse.model_validate(user)
     )
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get current authenticated user information.
+    
+    Args:
+        current_user: Currently authenticated user
+    
+    Returns:
+        UserResponse with user data
+    """
+    return UserResponse.model_validate(current_user)
 
 
 @router.post("/logout")
