@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// Use Next.js API routes as proxy to backend
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseURL: '/api',
   withCredentials: true, // Important for sending httpOnly cookies
   headers: {
     'Content-Type': 'application/json',
