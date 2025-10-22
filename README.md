@@ -594,7 +594,156 @@ celery -A app.celery_app purge
     └── {model_name}  # Cached model files
 ```
 
+## Frontend (Next.js 14)
+
+The application includes a modern frontend built with Next.js 14, TypeScript, and App Router.
+
+### Frontend Structure
+
+```
+frontend/
+├── app/                    # Next.js 14 App Router
+│   ├── layout.tsx         # Root layout with AuthProvider
+│   ├── page.tsx           # Home page (redirects to login/dashboard)
+│   ├── globals.css        # Global styles
+│   ├── login/             # Login page
+│   │   └── page.tsx
+│   ├── register/          # Register page
+│   │   └── page.tsx
+│   └── dashboard/         # Protected dashboard page
+│       └── page.tsx
+├── contexts/              # React contexts
+│   └── AuthContext.tsx    # Authentication context
+├── hooks/                 # Custom React hooks
+│   └── useAuth.ts         # Authentication hooks
+├── lib/                   # Utility libraries
+│   ├── api.ts             # Axios instance with interceptors
+│   └── auth.ts            # Authentication service
+├── types/                 # TypeScript type definitions
+│   └── auth.ts            # Auth-related types
+├── middleware.ts          # Next.js middleware for route protection
+├── package.json           # Dependencies and scripts
+├── tsconfig.json          # TypeScript configuration
+├── next.config.js         # Next.js configuration
+└── .env.local             # Environment variables
+```
+
+### Authentication Features
+
+The frontend implements custom JWT authentication with httpOnly cookies:
+
+- **Custom JWT Implementation**: Direct integration with FastAPI backend
+- **HttpOnly Cookies**: Secure token storage (access_token and refresh_token)
+- **Protected Routes**: Middleware-based route protection for `/dashboard`
+- **Authentication Context**: Global auth state management
+- **Custom Hooks**: `useAuth()`, `useUser()`, `useRequireAuth()`
+- **Automatic Redirects**: Login redirects, post-auth routing
+- **Error Handling**: Automatic 401 handling and redirects
+
+### Setup and Development
+
+#### Install Dependencies
+
+```bash
+cd frontend
+npm install
+```
+
+#### Configure Environment
+
+Update `.env.local` with your backend URL:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+#### Run Development Server
+
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:3000`.
+
+#### Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+### Authentication Flow
+
+1. **Registration**: User submits form → POST `/auth/register` → Cookies set → Redirect to dashboard
+2. **Login**: User submits credentials → POST `/auth/login` → Cookies set → Redirect to dashboard
+3. **Protected Routes**: Middleware checks `access_token` cookie → Allow/Deny access
+4. **Current User**: Frontend calls GET `/auth/me` to get user data
+5. **Logout**: POST `/auth/logout` → Cookies cleared → Redirect to login
+
+### Available Pages
+
+- **`/`**: Home page (auto-redirects to `/login` or `/dashboard`)
+- **`/login`**: Login page with email/password form
+- **`/register`**: Registration page with user details form
+- **`/dashboard`**: Protected dashboard page (requires authentication)
+
+### Middleware Protection
+
+The Next.js middleware (`middleware.ts`) automatically:
+
+- Protects `/dashboard` routes (requires `access_token` cookie)
+- Redirects unauthenticated users to `/login`
+- Redirects authenticated users away from `/login` and `/register`
+- Preserves original URL for post-login redirect
+
+### Custom Hooks
+
+#### `useAuth()`
+
+Access full authentication context:
+
+```typescript
+const { user, loading, login, register, logout, refreshUser } = useAuth();
+```
+
+#### `useUser()`
+
+Get current user and loading state:
+
+```typescript
+const { user, loading } = useUser();
+```
+
+#### `useRequireAuth()`
+
+Require authentication (auto-redirect if not authenticated):
+
+```typescript
+const { user, loading } = useRequireAuth();
+```
+
+### API Integration
+
+The frontend uses Axios with interceptors for API communication:
+
+- **Base URL**: Configured via `NEXT_PUBLIC_API_URL`
+- **Credentials**: `withCredentials: true` for cookie support
+- **Error Handling**: Automatic 401 handling and redirect
+- **Headers**: JSON content type by default
+
+### Styling
+
+The application uses custom CSS with:
+
+- Modern gradient backgrounds
+- Card-based layouts
+- Responsive design
+- Persian/Farsi language support
+- Clean and intuitive UI
+
 ## Dependencies
+
+### Backend
 
 - **FastAPI**: Modern web framework
 - **SQLModel**: SQL database library with Pydantic integration
@@ -607,3 +756,11 @@ celery -A app.celery_app purge
 - **Redis**: Message broker and result backend for Celery
 - **Python-Multipart**: File upload support
 - **Pytest**: Testing framework
+
+### Frontend
+
+- **Next.js 14**: React framework with App Router
+- **React 18**: UI library
+- **TypeScript**: Type-safe JavaScript
+- **Axios**: HTTP client for API requests
+- **js-cookie**: Cookie manipulation (for client-side reading if needed)
