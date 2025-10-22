@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/tasks/${params.taskId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/tasks/${params.taskId}`, {
       method: 'GET',
       headers: {
         'Cookie': cookies,
@@ -29,7 +29,7 @@ export async function GET(
       return NextResponse.json(data, { status: response.status });
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Get task proxy error:', error);
     return NextResponse.json(
@@ -55,7 +55,7 @@ export async function PUT(
 
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/tasks/${params.taskId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/tasks/${params.taskId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ export async function PUT(
       return NextResponse.json(data, { status: response.status });
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Update task proxy error:', error);
     return NextResponse.json(
@@ -94,7 +94,7 @@ export async function DELETE(
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/tasks/${params.taskId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/tasks/${params.taskId}`, {
       method: 'DELETE',
       headers: {
         'Cookie': cookies,
@@ -111,7 +111,7 @@ export async function DELETE(
       return NextResponse.json(data, { status: response.status });
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('Delete task proxy error:', error);
     return NextResponse.json(
