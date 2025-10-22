@@ -610,8 +610,13 @@ frontend/
 │   │   └── page.tsx
 │   ├── register/          # Register page
 │   │   └── page.tsx
-│   └── dashboard/         # Protected dashboard page
-│       └── page.tsx
+│   └── dashboard/         # Protected dashboard pages
+│       ├── page.tsx       # Task list with real-time polling
+│       ├── upload/        # Audio file upload
+│       │   └── page.tsx
+│       └── tasks/         # Task details
+│           └── [taskId]/
+│               └── page.tsx
 ├── contexts/              # React contexts
 │   └── AuthContext.tsx    # Authentication context
 ├── hooks/                 # Custom React hooks
@@ -620,7 +625,8 @@ frontend/
 │   ├── api.ts             # Axios instance with interceptors
 │   └── auth.ts            # Authentication service
 ├── types/                 # TypeScript type definitions
-│   └── auth.ts            # Auth-related types
+│   ├── auth.ts            # Auth-related types
+│   └── task.ts            # Task-related types
 ├── middleware.ts          # Next.js middleware for route protection
 ├── package.json           # Dependencies and scripts
 ├── tsconfig.json          # TypeScript configuration
@@ -685,8 +691,9 @@ npm start
 - **`/`**: Home page (auto-redirects to `/login` or `/dashboard`)
 - **`/login`**: Login page with email/password form
 - **`/register`**: Registration page with user details form
-- **`/dashboard`**: Protected dashboard page (requires authentication)
+- **`/dashboard`**: Protected dashboard page with task list and real-time updates (requires authentication)
 - **`/dashboard/upload`**: Audio file upload page with drag-and-drop support
+- **`/dashboard/tasks/[taskId]`**: Task details page with comprehensive information and status tracking
 
 ### Middleware Protection
 
@@ -776,16 +783,72 @@ The frontend includes a dedicated upload page (`/dashboard/upload`) for uploadin
 - **Title**: Required, 1-255 characters
 - **Description**: Optional
 
+### Task Dashboard
+
+The dashboard page (`/dashboard`) provides a comprehensive task management interface with real-time updates:
+
+#### Features
+
+- **Real-time Task List**: Displays all user tasks with automatic polling every 10 seconds
+- **Manual Refresh**: Button to manually refresh task list on demand
+- **Task Cards**: Beautiful card-based layout with status badges and metadata
+- **Status Indicators**: Color-coded badges for different task states:
+  - **Pending** (در انتظار): Yellow badge for tasks waiting to be processed
+  - **Processing** (در حال پردازش): Blue animated badge for tasks currently being processed
+  - **Completed** (تکمیل شده): Green badge for successfully completed tasks
+  - **Failed** (ناموفق): Red badge for tasks that encountered errors
+  - **Cancelled** (لغو شده): Gray badge for cancelled tasks
+- **Task Navigation**: Click on any task card to view detailed information
+- **Metadata Display**: Shows creation time, completion time, file status, and result availability
+- **Responsive Design**: Grid layout that adapts to different screen sizes
+- **Empty State**: Helpful message when no tasks exist
+
+#### Task Details Page
+
+The task details page (`/dashboard/tasks/[taskId]`) provides comprehensive information about individual tasks:
+
+**Features:**
+- **Full Task Information**: Title, description, status, and all timestamps
+- **Real-time Updates**: Polls every 10 seconds to show latest task status
+- **Manual Refresh**: Button to manually refresh task details
+- **File Information**: Shows input file and result file availability
+- **Comprehensive Metadata**: Created time, updated time, due date, completion time
+- **File Paths**: Displays full file paths for uploaded and result files
+- **Task IDs**: Shows task ID and user ID for reference
+- **Download Action**: Download button for completed tasks with results (ready for implementation)
+- **Error Handling**: Graceful handling of missing or unauthorized tasks
+
+#### Data Fetching with SWR
+
+The frontend uses **SWR (Stale-While-Revalidate)** for efficient data fetching:
+
+- **Automatic Polling**: Tasks are refreshed every 10 seconds (configurable)
+- **Revalidation on Focus**: Automatically refreshes when user returns to the tab
+- **Optimistic Updates**: Shows cached data immediately while fetching fresh data
+- **Error Handling**: Graceful error messages when API requests fail
+- **Manual Refresh**: `mutate()` function for on-demand data refresh
+
+#### API Integration
+
+- **Endpoint**: `GET /api/v1/tasks`
+- **Response**: `TaskListResponse` with tasks array and total count
+- **Authentication**: Automatic authentication via httpOnly cookies
+- **Pagination**: Supports skip/limit parameters (default: 0/100)
+- **Filtering**: Optional status filter for task states
+
 ### Styling
 
 The application uses custom CSS with:
 
 - Modern gradient backgrounds
-- Card-based layouts
-- Responsive design
+- Card-based layouts with hover effects
+- Responsive design with mobile optimization
 - Persian/Farsi language support
 - Clean and intuitive UI
 - Drag-and-drop upload interface with visual feedback
+- Animated status badges for processing tasks
+- Color-coded status indicators
+- Grid-based task layout
 
 ## Dependencies
 
@@ -809,4 +872,5 @@ The application uses custom CSS with:
 - **React 18**: UI library
 - **TypeScript**: Type-safe JavaScript
 - **Axios**: HTTP client for API requests
+- **SWR**: React Hooks library for data fetching with caching and real-time updates
 - **js-cookie**: Cookie manipulation (for client-side reading if needed)
