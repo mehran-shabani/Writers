@@ -184,7 +184,7 @@ def get_gpu_memory_info() -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_ram_memory_info() -> Dict[str, Any]]:
+def get_ram_memory_info() -> Dict[str, Any]:
     """Retrieves system RAM information.
 
     Returns:
