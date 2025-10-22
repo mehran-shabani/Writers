@@ -1,7 +1,18 @@
+# =============================================================================
+# Docker Compose Configuration for Monitoring
+# =============================================================================
+# This file defines the services for monitoring the application, including:
+# - Prometheus: For collecting metrics.
+# - Grafana: For visualizing metrics and logs.
+# - Loki: For aggregating logs.
+# - Promtail: For collecting and sending logs to Loki.
+# - Various exporters: For exposing metrics from different services.
+# =============================================================================
+
 version: '3.8'
 
 services:
-  # Prometheus for metrics collection
+  # Prometheus: Service for collecting and storing metrics.
   prometheus:
     image: prom/prometheus:latest
     container_name: writers-prometheus
@@ -21,7 +32,7 @@ services:
     networks:
       - monitoring
 
-  # Grafana for visualization
+  # Grafana: Service for visualizing metrics and logs in dashboards.
   grafana:
     image: grafana/grafana:latest
     container_name: writers-grafana
@@ -44,7 +55,7 @@ services:
       - prometheus
       - loki
 
-  # Loki for log aggregation
+  # Loki: Service for aggregating and storing logs.
   loki:
     image: grafana/loki:latest
     container_name: writers-loki
@@ -58,7 +69,7 @@ services:
     networks:
       - monitoring
 
-  # Promtail for log collection
+  # Promtail: Agent for collecting logs and sending them to Loki.
   promtail:
     image: grafana/promtail:latest
     container_name: writers-promtail
@@ -72,7 +83,7 @@ services:
     depends_on:
       - loki
 
-  # Node Exporter for system metrics
+  # Node Exporter: Exposes system-level metrics from the host.
   node-exporter:
     image: prom/node-exporter:latest
     container_name: writers-node-exporter
@@ -91,7 +102,7 @@ services:
     networks:
       - monitoring
 
-  # Redis Exporter
+  # Redis Exporter: Exposes Redis metrics for Prometheus.
   redis-exporter:
     image: oliver006/redis_exporter:latest
     container_name: writers-redis-exporter
@@ -104,7 +115,7 @@ services:
       - monitoring
       - app-network
 
-  # PostgreSQL Exporter
+  # PostgreSQL Exporter: Exposes PostgreSQL metrics for Prometheus.
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: writers-postgres-exporter
@@ -117,7 +128,7 @@ services:
       - monitoring
       - app-network
 
-  # Nginx Exporter
+  # Nginx Exporter: Exposes Nginx metrics for Prometheus.
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
     container_name: writers-nginx-exporter
@@ -129,7 +140,7 @@ services:
     networks:
       - monitoring
 
-  # Alertmanager for alerts
+  # Alertmanager: Manages alerts sent by Prometheus.
   alertmanager:
     image: prom/alertmanager:latest
     container_name: writers-alertmanager

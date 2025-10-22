@@ -1,75 +1,75 @@
-# Writers - سیستم مدیریت وظایف با پردازش هوش مصنوعی
+# Writers - AI-Powered Task Management System
 
-یک سیستم مدیریت وظایف پیشرفته با قابلیت پردازش و تحلیل محتوا از طریق هوش مصنوعی.
+An advanced task management system with AI-powered content processing and analysis.
 
-<div dir="rtl">
+<div>
 
-## 📋 فهرست مطالب
+## 📋 Table of Contents
 
-- [معرفی](#معرفی)
-- [ویژگی‌های کلیدی](#ویژگی‌های-کلیدی)
-- [معماری سیستم](#معماری-سیستم)
-- [فناوری‌های استفاده شده](#فناوری‌های-استفاده-شده)
-- [نصب و راه‌اندازی سریع](#نصب-و-راه‌اندازی-سریع)
-- [ساختار پروژه](#ساختار-پروژه)
+- [Introduction](#introduction)
+- [Key Features](#key-features)
+- [System Architecture](#system-architecture)
+- [Technologies Used](#technologies-used)
+- [Quick Installation and Setup](#quick-installation-and-setup)
+- [Project Structure](#project-structure)
 - [API Endpoints](#api-endpoints)
-- [مانیتورینگ و لاگینگ](#مانیتورینگ-و-لاگینگ)
-- [امنیت](#امنیت)
-- [مقیاس‌پذیری](#مقیاس‌پذیری)
-- [مستندات تکمیلی](#مستندات-تکمیلی)
+- [Monitoring and Logging](#monitoring-and-logging)
+- [Security](#security)
+- [Scalability](#scalability)
+- [Additional Documentation](#additional-documentation)
 
 ---
 
-## 🎯 معرفی
+## 🎯 Introduction
 
-Writers یک پلتفرم کامل برای مدیریت وظایف است که با استفاده از معماری مدرن میکروسرویس‌ها طراحی شده است. این سیستم قابلیت پردازش فایل‌ها، تحلیل محتوا و مدیریت کاربران را با رابط کاربری مدرن و API RESTful فراهم می‌کند.
+Writers is a complete platform for task management, designed using a modern microservices architecture. This system provides file processing, content analysis, and user management with a modern user interface and a RESTful API.
 
-### مشخصات کلیدی
+### Key Specifications
 
-- ✅ معماری Microservices با جداسازی کامل Frontend و Backend
-- ✅ احراز هویت امن با JWT و Cookie-based sessions
-- ✅ پردازش ناهمزمان وظایف با Celery
-- ✅ API Proxy در Next.js برای مدیریت بهتر کوکی‌ها و هدرها
-- ✅ مانیتورینگ کامل با Prometheus و Grafana
-- ✅ لاگینگ متمرکز با Loki و Promtail
-- ✅ پیکربندی Nginx با SSL/TLS
-- ✅ هشدارهای خودکار برای منابع سیستم (RAM، GPU، Disk)
-- ✅ آماده برای محیط Production
+- ✅ Microservices architecture with complete separation of Frontend and Backend
+- ✅ Secure authentication with JWT and Cookie-based sessions
+- ✅ Asynchronous task processing with Celery
+- ✅ API Proxy in Next.js for better cookie and header management
+- ✅ Complete monitoring with Prometheus and Grafana
+- ✅ Centralized logging with Loki and Promtail
+- ✅ Nginx configuration with SSL/TLS
+- ✅ Automatic alerts for system resources (RAM, GPU, Disk)
+- ✅ Ready for Production environment
 
 ---
 
-## 🚀 ویژگی‌های کلیدی
+## 🚀 Key Features
 
-### مدیریت کاربران
-- ثبت‌نام و ورود امن
-- احراز هویت مبتنی بر JWT
-- مدیریت Session با Refresh Token
-- نقش‌ها و دسترسی‌ها
+### User Management
+- Secure registration and login
+- JWT-based authentication
+- Session management with Refresh Token
+- Roles and permissions
 
-### مدیریت وظایف
-- ایجاد، ویرایش و حذف وظایف
-- آپلود و مدیریت فایل‌ها
-- پردازش ناهمزمان با Celery
-- ردیابی وضعیت پردازش
-- ویرایشگر متن پیشرفته با TipTap
+### Task Management
+- Create, edit, and delete tasks
+- Upload and manage files
+- Asynchronous processing with Celery
+- Track processing status
+- Advanced text editor with TipTap
 
-### زیرساخت و عملیات
-- Load Balancing با Nginx
-- SSL/TLS با Let's Encrypt
+### Infrastructure and Operations
+- Load Balancing with Nginx
+- SSL/TLS with Let's Encrypt
 - Health Check endpoints
 - Rate Limiting
 - CORS Configuration
 
-### مانیتورینگ و لاگینگ
-- جمع‌آوری متریک‌ها با Prometheus
-- داشبوردهای Grafana
-- لاگ‌های متمرکز با Loki
-- هشدارهای خودکار با Alertmanager
-- مانیتورینگ GPU و منابع سیستم
+### Monitoring and Logging
+- Metrics collection with Prometheus
+- Grafana dashboards
+- Centralized logs with Loki
+- Automatic alerts with Alertmanager
+- GPU and system resources monitoring
 
 ---
 
-## 🏗️ معماری سیستم
+## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -119,19 +119,19 @@ Writers یک پلتفرم کامل برای مدیریت وظایف است که 
 
 ---
 
-## 🛠️ فناوری‌های استفاده شده
+## 🛠️ Technologies Used
 
 ### Backend
-- **FastAPI** - فریمورک وب پرسرعت Python
-- **SQLAlchemy** - ORM برای مدیریت دیتابیس
-- **Alembic** - مدیریت Migration
-- **Pydantic** - اعتبارسنجی داده‌ها
+- **FastAPI** - High-speed Python web framework
+- **SQLAlchemy** - ORM for database management
+- **Alembic** - Migration management
+- **Pydantic** - Data validation
 - **Python-JOSE** - JWT Token Management
-- **Passlib** - Hash کردن رمزهای عبور
-- **Celery** - پردازش ناهمزمان
+- **Passlib** - Password hashing
+- **Celery** - Asynchronous processing
 
 ### Frontend
-- **Next.js 14** - React Framework با SSR/SSG
+- **Next.js 14** - React Framework with SSR/SSG
 - **TypeScript** - Type Safety
 - **TailwindCSS** - Styling
 - **TipTap** - Rich Text Editor
@@ -139,11 +139,11 @@ Writers یک پلتفرم کامل برای مدیریت وظایف است که 
 - **SWR** - Data Fetching
 
 ### Database & Cache
-- **PostgreSQL** - پایگاه داده اصلی
-- **Redis** - Cache و Message Broker
+- **PostgreSQL** - Main database
+- **Redis** - Cache and Message Broker
 
 ### Infrastructure
-- **Nginx** - Reverse Proxy و Load Balancer
+- **Nginx** - Reverse Proxy and Load Balancer
 - **Docker** - Containerization
 - **Docker Compose** - Orchestration
 
@@ -160,9 +160,9 @@ Writers یک پلتفرم کامل برای مدیریت وظایف است که 
 
 ---
 
-## ⚡ نصب و راه‌اندازی سریع
+## ⚡ Quick Installation and Setup
 
-### پیش‌نیازها
+### Prerequisites
 
 ```bash
 # Ubuntu/Debian
@@ -173,148 +173,148 @@ Writers یک پلتفرم کامل برای مدیریت وظایف است که 
 - Nginx
 ```
 
-### راه‌اندازی Development
+### Development Setup
 
-#### 1. کلون کردن پروژه
+#### 1. Clone the project
 
 ```bash
 git clone https://github.com/yourusername/writers.git
 cd writers
 ```
 
-#### 2. راه‌اندازی Backend
+#### 2. Backend Setup
 
 ```bash
 cd backend
 
-# ایجاد محیط مجازی
+# Create a virtual environment
 python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
-# یا
+# or
 venv\Scripts\activate  # Windows
 
-# نصب وابستگی‌ها
+# Install dependencies
 pip install -r requirements.txt
 
-# تنظیم متغیرهای محیطی
+# Set environment variables
 cp ../.env.example .env
-# ویرایش .env و تنظیم مقادیر
+# Edit .env and set the values
 
-# اجرای migrations
+# Run migrations
 alembic upgrade head
 
-# راه‌اندازی سرور
+# Start the server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### 3. راه‌اندازی Frontend
+#### 3. Frontend Setup
 
 ```bash
 cd frontend
 
-# نصب وابستگی‌ها
+# Install dependencies
 npm install
 
-# راه‌اندازی سرور
+# Start the server
 npm run dev
 ```
 
-#### 4. راه‌اندازی Worker
+#### 4. Worker Setup
 
 ```bash
 cd worker
 
-# ایجاد محیط مجازی
+# Create a virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# نصب وابستگی‌ها
+# Install dependencies
 pip install -r requirements.txt
 
-# راه‌اندازی Celery worker
+# Start the Celery worker
 celery -A tasks worker --loglevel=info
 ```
 
-#### 5. دسترسی به برنامه
+#### 5. Access the application
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
 
-### راه‌اندازی Production
+### Production Setup
 
-برای راه‌اندازی کامل در محیط Production، به [راهنمای راه‌اندازی](SETUP_GUIDE.md) مراجعه کنید.
+For a full production setup, refer to the [Setup Guide](SETUP_GUIDE.md).
 
-#### نصب سریع با Docker
+#### Quick Install with Docker
 
 ```bash
 cd infrastructure
 
-# راه‌اندازی تمام سرویس‌ها
+# Start all services
 docker-compose up -d
 
-# راه‌اندازی monitoring
+# Start monitoring
 docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
 ---
 
-## 📁 ساختار پروژه
+## 📁 Project Structure
 
 ```
 writers/
 ├── backend/                    # FastAPI Backend
 │   ├── app/
-│   │   ├── auth/              # ماژول احراز هویت
-│   │   ├── models/            # مدل‌های دیتابیس
+│   │   ├── auth/              # Authentication module
+│   │   ├── models/            # Database models
 │   │   ├── routers/           # API Endpoints
-│   │   ├── db.py              # تنظیمات دیتابیس
-│   │   └── main.py            # نقطه ورود
+│   │   ├── db.py              # Database settings
+│   │   └── main.py            # Entry point
 │   ├── alembic/               # Database Migrations
-│   ├── tests/                 # تست‌ها
+│   ├── tests/                 # Tests
 │   └── requirements.txt
 │
 ├── frontend/                   # Next.js Frontend
 │   ├── app/
 │   │   ├── api/              # Next.js API Proxy Routes
-│   │   │   ├── auth/         # Proxy برای احراز هویت
-│   │   │   └── tasks/        # Proxy برای وظایف
-│   │   ├── dashboard/        # صفحات Dashboard
-│   │   ├── login/            # صفحه ورود
-│   │   └── register/         # صفحه ثبت‌نام
-│   ├── components/           # کامپوننت‌های React
-│   ├── lib/                  # کتابخانه‌های کمکی
-│   ├── __tests__/            # تست‌های یکپارچگی
+│   │   │   ├── auth/         # Proxy for authentication
+│   │   │   └── tasks/        # Proxy for tasks
+│   │   ├── dashboard/        # Dashboard pages
+│   │   ├── login/            # Login page
+│   │   └── register/         # Registration page
+│   ├── components/           # React components
+│   ├── lib/                  # Helper libraries
+│   ├── __tests__/            # Integration tests
 │   └── package.json
 │
 ├── worker/                     # Celery Worker
-│   ├── tasks.py              # تعریف Task‌ها
+│   ├── tasks.py              # Task definitions
 │   └── requirements.txt
 │
-├── infrastructure/            # زیرساخت و DevOps
+├── infrastructure/            # Infrastructure and DevOps
 │   ├── nginx/
-│   │   ├── nginx.conf        # پیکربندی Production با SSL
-│   │   └── nginx-local.conf  # پیکربندی Local
+│   │   ├── nginx.conf        # Production configuration with SSL
+│   │   └── nginx-local.conf  # Local configuration
 │   ├── monitoring/
-│   │   ├── prometheus/       # تنظیمات Prometheus
+│   │   ├── prometheus/       # Prometheus settings
 │   │   │   ├── prometheus.yml
-│   │   │   └── alerts/       # قوانین هشدار
-│   │   ├── grafana/          # داشبوردها و datasources
-│   │   └── alertmanager/     # تنظیمات Alertmanager
+│   │   │   └── alerts/       # Alert rules
+│   │   ├── grafana/          # Dashboards and datasources
+│   │   └── alertmanager/     # Alertmanager settings
 │   ├── logging/
-│   │   ├── loki/             # تنظیمات Loki
-│   │   └── promtail/         # تنظیمات Promtail
+│   │   ├── loki/             # Loki settings
+│   │   └── promtail/         # Promtail settings
 │   ├── scripts/
-│   │   ├── setup-ssl.sh      # نصب SSL با Certbot
-│   │   ├── deploy-nginx.sh   # استقرار امن Nginx
-│   │   ├── health-check.sh   # بررسی سلامت سرویس‌ها
+│   │   ├── setup-ssl.sh      # Install SSL with Certbot
+│   │   ├── deploy-nginx.sh   # Secure Nginx deployment
+│   │   ├── health-check.sh   # Check service health
 │   │   └── setup-monitoring.sh
 │   ├── docker-compose.yml
 │   └── docker-compose.monitoring.yml
 │
-├── .env.example               # نمونه فایل محیطی
-├── README.md                  # این فایل
-└── SETUP_GUIDE.md            # راهنمای کامل راه‌اندازی
+├── .env.example               # Sample environment file
+├── README.md                  # This file
+└── SETUP_GUIDE.md            # Full setup guide
 ```
 
 ---
@@ -324,43 +324,43 @@ writers/
 ### Authentication
 
 ```
-POST   /api/auth/register      # ثبت‌نام کاربر جدید
-POST   /api/auth/login         # ورود به سیستم
-POST   /api/auth/logout        # خروج از سیستم
-GET    /api/auth/me            # اطلاعات کاربر فعلی
-POST   /api/auth/refresh       # تمدید توکن
+POST   /api/auth/register      # Register a new user
+POST   /api/auth/login         # Log in
+POST   /api/auth/logout        # Log out
+GET    /api/auth/me            # Current user information
+POST   /api/auth/refresh       # Refresh token
 ```
 
 ### Tasks
 
 ```
-GET    /api/tasks              # لیست وظایف
-POST   /api/tasks              # ایجاد وظیفه جدید
-GET    /api/tasks/{id}         # جزئیات وظیفه
-PUT    /api/tasks/{id}         # به‌روزرسانی وظیفه
-DELETE /api/tasks/{id}         # حذف وظیفه
+GET    /api/tasks              # List tasks
+POST   /api/tasks              # Create a new task
+GET    /api/tasks/{id}         # Task details
+PUT    /api/tasks/{id}         # Update a task
+DELETE /api/tasks/{id}         # Delete a task
 ```
 
 ### Health & Metrics
 
 ```
-GET    /health                 # بررسی سلامت سرویس
-GET    /metrics                # متریک‌های Prometheus
+GET    /health                 # Check service health
+GET    /metrics                # Prometheus metrics
 ```
 
-### مستندات کامل API
+### Full API Documentation
 
-مستندات تعاملی Swagger در دسترس است:
+Interactive Swagger documentation is available:
 - Production: https://yourdomain.com/docs
 - Development: http://localhost:8000/docs
 
 ---
 
-## 📊 مانیتورینگ و لاگینگ
+## 📊 Monitoring and Logging
 
 ### Prometheus Metrics
 
-سیستم به‌صورت خودکار متریک‌های زیر را جمع‌آوری می‌کند:
+The system automatically collects the following metrics:
 
 - **System Metrics**: CPU, RAM, Disk, Network
 - **Application Metrics**: Request count, Response time, Error rate
@@ -370,30 +370,30 @@ GET    /metrics                # متریک‌های Prometheus
 
 ### Grafana Dashboards
 
-Dashboard‌های آماده:
-- **System Overview**: نمای کلی منابع سیستم
-- **Application Performance**: عملکرد API و Backend
-- **Database Performance**: وضعیت PostgreSQL
-- **Error Tracking**: ردیابی خطاها و استثناها
+Ready-made dashboards:
+- **System Overview**: Overview of system resources
+- **Application Performance**: API and Backend performance
+- **Database Performance**: PostgreSQL status
+- **Error Tracking**: Track errors and exceptions
 
-دسترسی: http://localhost:3001 (admin/admin)
+Access: http://localhost:3001 (admin/admin)
 
 ### Log Aggregation
 
-تمام لاگ‌ها در Loki جمع‌آوری می‌شوند:
+All logs are collected in Loki:
 - FastAPI application logs
 - Nginx access/error logs
 - Celery worker logs
 - PostgreSQL logs
 - System logs
 
-دسترسی: از طریق Grafana > Explore > Loki
+Access: via Grafana > Explore > Loki
 
 ### Alert Rules
 
-هشدارهای تعریف شده:
+Defined alerts:
 
-#### منابع سیستم
+#### System Resources
 - ✅ RAM > 85% (Warning)
 - ⚠️ RAM > 95% (Critical)
 - ✅ Disk > 80% (Warning)
@@ -401,7 +401,7 @@ Dashboard‌های آماده:
 - ✅ GPU Temp > 80°C (Warning)
 - ⚠️ GPU Temp > 90°C (Critical)
 
-#### سرویس‌ها
+#### Services
 - ⚠️ Service Down (Critical)
 - ✅ High Error Rate > 5% (Warning)
 - ✅ High Response Time > 2s (Warning)
@@ -409,27 +409,27 @@ Dashboard‌های آماده:
 
 ---
 
-## 🔒 امنیت
+## 🔒 Security
 
-### احراز هویت
+### Authentication
 - JWT-based authentication
-- HttpOnly cookies برای جلوگیری از XSS
+- HttpOnly cookies to prevent XSS
 - Refresh token rotation
-- Secure password hashing با Bcrypt
+- Secure password hashing with Bcrypt
 
 ### HTTPS/SSL
 - TLS 1.2/1.3
-- Automatic certificate renewal با Let's Encrypt
+- Automatic certificate renewal with Let's Encrypt
 - HSTS headers
 - Secure cipher suites
 
 ### API Security
 - Rate limiting (10 req/s for API, 5 req/s for auth)
 - CORS configuration
-- Input validation با Pydantic
-- SQL injection protection با SQLAlchemy ORM
+- Input validation with Pydantic
+- SQL injection protection with SQLAlchemy ORM
 
-### Headers امنیتی
+### Security Headers
 ```
 X-Frame-Options: SAMEORIGIN
 X-Content-Type-Options: nosniff
@@ -439,36 +439,36 @@ Strict-Transport-Security: max-age=31536000
 
 ---
 
-## 📈 مقیاس‌پذیری
+## 📈 Scalability
 
-### توصیه‌های سخت‌افزاری
+### Hardware Recommendations
 
-| کاربران همزمان | RAM    | CPU Cores | Storage |
-|-----------------|--------|-----------|---------|
+| Concurrent Users | RAM    | CPU Cores | Storage |
+|---|---|---|---|
 | < 100           | 16 GB  | 4         | 50 GB   |
 | 100-500         | 32 GB  | 8         | 100 GB  |
 | 500-1000        | 64 GB  | 16        | 200 GB  |
 | 1000+           | 128 GB | 32+       | 500 GB+ |
 
-### افزایش ظرفیت
+### Increasing Capacity
 
 #### Backend Workers
 ```bash
-# در /etc/systemd/system/writers-backend.service
+# in /etc/systemd/system/writers-backend.service
 ExecStart=.../uvicorn app.main:app --workers 8
 ```
 
 #### Celery Workers
 ```bash
-# در /etc/systemd/system/writers-worker.service
+# in /etc/systemd/system/writers-worker.service
 ExecStart=.../celery -A tasks worker --concurrency=8
 ```
 
 #### Horizontal Scaling
 
-برای مقیاس‌پذیری افقی:
+For horizontal scaling:
 
-1. **Load Balancer**: استفاده از Nginx upstream
+1. **Load Balancer**: Use Nginx upstream
 ```nginx
 upstream backend_servers {
     least_conn;
@@ -478,13 +478,13 @@ upstream backend_servers {
 }
 ```
 
-2. **Database Replication**: تنظیم Master-Slave PostgreSQL
-3. **Redis Cluster**: برای cache توزیع شده
-4. **Shared Storage**: برای فایل‌های آپلود شده
+2. **Database Replication**: Set up Master-Slave PostgreSQL
+3. **Redis Cluster**: For distributed cache
+4. **Shared Storage**: For uploaded files
 
 ---
 
-## 🧪 تست
+## 🧪 Testing
 
 ### Backend Tests
 
@@ -492,7 +492,7 @@ upstream backend_servers {
 cd backend
 pytest
 
-# با coverage
+# with coverage
 pytest --cov=app --cov-report=html
 ```
 
@@ -502,42 +502,42 @@ pytest --cov=app --cov-report=html
 cd frontend
 npm test
 
-# با coverage
+# with coverage
 npm run test:coverage
 ```
 
 ### Integration Tests
 
 ```bash
-# تست API proxy routes
+# Test API proxy routes
 cd frontend
 npm test -- __tests__/api/proxy.test.ts
 ```
 
 ---
 
-## 🚢 استقرار (Deployment)
+## 🚢 Deployment
 
-### با Docker
+### With Docker
 
 ```bash
 # Build images
 docker-compose build
 
-# راه‌اندازی سرویس‌ها
+# Start services
 docker-compose up -d
 
-# مشاهده لاگ‌ها
+# View logs
 docker-compose logs -f
 ```
 
-### با Systemd
+### With Systemd
 
-جزئیات کامل در [راهنمای راه‌اندازی](SETUP_GUIDE.md)
+Full details in the [Setup Guide](SETUP_GUIDE.md)
 
 ### CI/CD
 
-پروژه آماده برای integration با:
+The project is ready for integration with:
 - GitHub Actions
 - GitLab CI
 - Jenkins
@@ -545,10 +545,10 @@ docker-compose logs -f
 
 ---
 
-## 📚 مستندات تکمیلی
+## 📚 Additional Documentation
 
-- **[راهنمای راه‌اندازی کامل](SETUP_GUIDE.md)** - مراحل دقیق نصب و پیکربندی
-- **[API Documentation](http://localhost:8000/docs)** - مستندات تعاملی Swagger
+- **[Full Setup Guide](SETUP_GUIDE.md)** - Detailed installation and configuration steps
+- **[API Documentation](http://localhost:8000/docs)** - Interactive Swagger documentation
 - **Infrastructure Docs**:
   - [QUICK_START.md](infrastructure/QUICK_START.md)
   - [DEPLOYMENT.md](infrastructure/DEPLOYMENT.md)
@@ -556,17 +556,17 @@ docker-compose logs -f
 
 ---
 
-## 🤝 مشارکت
+## 🤝 Contribution
 
-برای مشارکت در پروژه:
+To contribute to the project:
 
-1. Fork کردن پروژه
-2. ایجاد branch برای feature جدید (`git checkout -b feature/AmazingFeature`)
-3. Commit کردن تغییرات (`git commit -m 'Add some AmazingFeature'`)
-4. Push به branch (`git push origin feature/AmazingFeature`)
-5. ایجاد Pull Request
+1. Fork the project
+2. Create a new branch for a feature (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Create a Pull Request
 
-### استانداردهای کد
+### Code Standards
 
 - **Python**: PEP 8
 - **JavaScript/TypeScript**: ESLint + Prettier
@@ -574,13 +574,13 @@ docker-compose logs -f
 
 ---
 
-## 📝 لایسنس
+## 📝 License
 
-این پروژه تحت لایسنس MIT منتشر شده است. برای جزئیات بیشتر فایل [LICENSE](LICENSE) را مطالعه کنید.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 👥 تیم توسعه
+## 👥 Development Team
 
 - **Backend Development**: FastAPI + SQLAlchemy
 - **Frontend Development**: Next.js + TypeScript
@@ -589,22 +589,22 @@ docker-compose logs -f
 
 ---
 
-## 📞 پشتیبانی
+## 📞 Support
 
-برای گزارش باگ یا درخواست feature:
+For bug reports or feature requests:
 - **GitHub Issues**: [Create an issue](https://github.com/yourusername/writers/issues)
 - **Email**: support@yourdomain.com
 - **Documentation**: [Full Documentation](https://writers-docs.yourdomain.com)
 
 ---
 
-## 🎉 تشکر
+## 🎉 Thanks
 
-از تمام کسانی که در توسعه این پروژه مشارکت داشته‌اند، تشکر می‌کنیم.
+Thanks to everyone who contributed to the development of this project.
 
 ---
 
-## 📊 وضعیت پروژه
+## 📊 Project Status
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-85%25-green)
@@ -614,6 +614,6 @@ docker-compose logs -f
 
 ---
 
-**ساخته شده با ❤️ در ایران**
+**Made with ❤️ in Iran**
 
 </div>

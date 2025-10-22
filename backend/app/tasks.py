@@ -10,15 +10,14 @@ from sqlmodel import select
 
 # Task wrapper utilities
 def update_task_status(task_id: str, status: TaskStatus) -> bool:
-    """
-    Update task status in database.
-    
+    """Updates the status of a task in the database.
+
     Args:
-        task_id: UUID of the task as string
-        status: New status to set
-        
+        task_id (str): The ID of the task to update.
+        status (TaskStatus): The new status for the task.
+
     Returns:
-        bool: True if successful, False otherwise
+        bool: True if the update was successful, otherwise False.
     """
     try:
         SessionLocal = get_session_local()
@@ -43,21 +42,18 @@ def update_task_status(task_id: str, status: TaskStatus) -> bool:
 
 @celery_app.task(name="transcribe_audio", bind=True)
 def transcribe_audio(self, task_id: str, audio_file_path: str) -> Dict[str, Any]:
-    """
-    Transcribe audio file to text.
-    
-    This task processes audio files and converts speech to text.
-    Can be used for:
-    - Voice notes transcription
-    - Meeting recordings
-    - Audio content analysis
-    
+    """Transcribes an audio file.
+
+    This Celery task simulates the process of transcribing an audio file. In a
+    production environment, this would integrate with a speech-to-text service.
+
     Args:
-        task_id: UUID of the task as string
-        audio_file_path: Path to the audio file
-        
+        task_id (str): The ID of the task.
+        audio_file_path (str): The path to the audio file to be transcribed.
+
     Returns:
-        dict: Result of transcription with text and metadata
+        Dict[str, Any]: A dictionary containing the transcription result or an
+                        error message.
     """
     try:
         # Update task to in_progress
@@ -99,21 +95,19 @@ def transcribe_audio(self, task_id: str, audio_file_path: str) -> Dict[str, Any]
 
 @celery_app.task(name="process_video", bind=True)
 def process_video(self, task_id: str, video_file_path: str) -> Dict[str, Any]:
-    """
-    Process video file.
-    
-    This task handles video processing operations like:
-    - Thumbnail generation
-    - Format conversion
-    - Compression
-    - Metadata extraction
-    
+    """Processes a video file.
+
+    This Celery task simulates video processing operations such as thumbnail
+    generation or format conversion. In production, this would use tools like
+    FFmpeg.
+
     Args:
-        task_id: UUID of the task as string
-        video_file_path: Path to the video file
-        
+        task_id (str): The ID of the task.
+        video_file_path (str): The path to the video file to be processed.
+
     Returns:
-        dict: Result of video processing
+        Dict[str, Any]: A dictionary containing the video processing result or
+                        an error message.
     """
     try:
         # Update task to in_progress
@@ -154,21 +148,19 @@ def process_video(self, task_id: str, video_file_path: str) -> Dict[str, Any]:
 
 @celery_app.task(name="analyze_text", bind=True)
 def analyze_text(self, task_id: str, text_content: str) -> Dict[str, Any]:
-    """
-    Analyze text content.
-    
-    This task performs text analysis operations like:
-    - Sentiment analysis
-    - Keyword extraction
-    - Language detection
-    - Content summarization
-    
+    """Analyzes a given text.
+
+    This Celery task simulates text analysis, which could include sentiment
+    analysis, keyword extraction, or summarization. In production, this would
+    integrate with a natural language processing service.
+
     Args:
-        task_id: UUID of the task as string
-        text_content: Text content to analyze
-        
+        task_id (str): The ID of the task.
+        text_content (str): The text content to be analyzed.
+
     Returns:
-        dict: Result of text analysis
+        Dict[str, Any]: A dictionary containing the text analysis result or
+                        an error message.
     """
     try:
         # Update task to in_progress
@@ -210,23 +202,18 @@ def analyze_text(self, task_id: str, text_content: str) -> Dict[str, Any]:
 
 @celery_app.task(name="process_task_file")
 def process_task_file(task_id: str, file_path: str):
-    """
-    Process uploaded file for a task.
-    
-    This is a background task that processes the uploaded file.
-    In a real application, this could perform various operations like:
-    - File validation
-    - Virus scanning
-    - Format conversion
-    - Data extraction
-    - AI processing
-    
+    """Processes a file associated with a task.
+
+    This Celery task simulates the processing of an uploaded file. This could
+    involve validation, data extraction, or other forms of processing.
+
     Args:
-        task_id: UUID of the task as string
-        file_path: Path to the uploaded file
-    
+        task_id (str): The ID of the task.
+        file_path (str): The path to the file to be processed.
+
     Returns:
-        dict: Result of processing
+        Dict[str, Any]: A dictionary containing the result of the file
+                        processing or an error message.
     """
     try:
         # Simulate file processing

@@ -1,3 +1,7 @@
+/**
+ * @interface User
+ * @description Represents a user object.
+ */
 export interface User {
   id: string;
   email: string;
@@ -9,11 +13,19 @@ export interface User {
   updated_at: string;
 }
 
+/**
+ * @interface LoginRequest
+ * @description Represents the request payload for a login attempt.
+ */
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
+/**
+ * @interface RegisterRequest
+ * @description Represents the request payload for a user registration.
+ */
 export interface RegisterRequest {
   email: string;
   username: string;
@@ -21,6 +33,10 @@ export interface RegisterRequest {
   full_name?: string;
 }
 
+/**
+ * @interface AuthResponse
+ * @description Represents the response from an authentication request.
+ */
 export interface AuthResponse {
   id: string;
   email: string;

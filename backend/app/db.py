@@ -13,9 +13,14 @@ _SessionLocal = None
 
 
 def get_engine() -> Engine:
-    """
-    Get or create the database engine.
-    Lazy initialization to avoid import errors when psycopg2 is not installed.
+    """Initializes and returns the database engine.
+
+    The engine is created with a connection pool and pre-ping to ensure
+    database connectivity. It is initialized lazily to prevent import errors
+    when database drivers are not installed.
+
+    Returns:
+        Engine: The SQLAlchemy engine instance.
     """
     global _engine
     if _engine is None:
@@ -30,7 +35,14 @@ def get_engine() -> Engine:
 
 
 def get_session_local():
-    """Get or create session factory"""
+    """Creates and returns a session factory for generating database sessions.
+
+    The session factory is configured to not autocommit or autoflush, and is
+    bound to the database engine.
+
+    Returns:
+        sessionmaker: The session factory instance.
+    """
     global _SessionLocal
     if _SessionLocal is None:
         _SessionLocal = sessionmaker(
@@ -43,13 +55,13 @@ def get_session_local():
 
 
 def get_session() -> Generator[Session, None, None]:
-    """
-    Dependency for getting database session.
-    
-    Usage in FastAPI:
-        @app.get("/items")
-        def read_items(session: Session = Depends(get_session)):
-            ...
+    """Provides a database session for a single request.
+
+    This function is a FastAPI dependency that yields a database session and
+    ensures that the session is closed after the request is complete.
+
+    Yields:
+        Generator[Session, None, None]: A generator that yields a database session.
     """
     SessionLocal = get_session_local()
     session = SessionLocal()
@@ -60,10 +72,10 @@ def get_session() -> Generator[Session, None, None]:
 
 
 def create_db_and_tables():
-    """
-    Create all tables in the database.
-    This is mainly for development/testing.
-    In production, use Alembic migrations.
+    """Creates all database tables defined by the SQLModel metadata.
+
+    This function is intended for development and testing purposes. In a
+    production environment, database migrations with Alembic should be used.
     """
     from sqlmodel import SQLModel
     SQLModel.metadata.create_all(get_engine())

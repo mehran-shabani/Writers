@@ -1,3 +1,13 @@
+"""Celery application configuration for the Writers API.
+
+This module initializes and configures the Celery application, which is used for
+running background tasks asynchronously. It sets up the message broker and
+result backend using Redis, and defines various task execution settings,
+including serialization, time limits, and task routing.
+
+The Celery app instance created here is used by both the FastAPI application to
+send tasks and by the Celery workers to execute them.
+"""
 import os
 from celery import Celery
 

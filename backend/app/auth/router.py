@@ -18,19 +18,22 @@ async def register(
     response: Response,
     session: Session = Depends(get_session)
 ):
-    """
-    Register a new user.
-    
+    """Handles user registration.
+
+    This endpoint creates a new user, hashes their password, and stores it in
+    the database. It then generates access and refresh tokens, which are set
+    as httpOnly cookies.
+
     Args:
-        user_data: User registration data
-        response: FastAPI response object for setting cookies
-        session: Database session
-    
+        user_data (UserRegister): The user's registration information.
+        response (Response): The FastAPI response object.
+        session (Session): The database session.
+
     Returns:
-        TokenResponse with user data and tokens set in httpOnly cookies
-    
+        TokenResponse: An object containing the user's information.
+
     Raises:
-        HTTPException: If email or username already exists
+        HTTPException: If the email or username is already registered.
     """
     # Check if email already exists
     statement = select(User).where(User.email == user_data.email)
@@ -100,19 +103,22 @@ async def login(
     response: Response,
     session: Session = Depends(get_session)
 ):
-    """
-    Login user and return tokens.
-    
+    """Handles user login.
+
+    This endpoint authenticates a user by verifying their email and password.
+    If successful, it generates new access and refresh tokens and sets them
+    as httpOnly cookies.
+
     Args:
-        credentials: User login credentials (email and password)
-        response: FastAPI response object for setting cookies
-        session: Database session
-    
+        credentials (UserLogin): The user's login credentials.
+        response (Response): The FastAPI response object.
+        session (Session): The database session.
+
     Returns:
-        TokenResponse with user data and tokens set in httpOnly cookies
-    
+        TokenResponse: An object containing the user's information.
+
     Raises:
-        HTTPException: If credentials are invalid
+        HTTPException: If the login credentials are invalid or the user is inactive.
     """
     # Find user by email
     statement = select(User).where(User.email == credentials.email)
@@ -177,28 +183,29 @@ async def login(
 async def get_current_user_info(
     current_user: User = Depends(get_current_active_user)
 ):
-    """
-    Get current authenticated user information.
-    
+    """Retrieves the information of the currently authenticated user.
+
     Args:
-        current_user: Currently authenticated user
-    
+        current_user (User): The authenticated user object.
+
     Returns:
-        UserResponse with user data
+        UserResponse: An object containing the user's public information.
     """
     return UserResponse.model_validate(current_user)
 
 
 @router.post("/logout")
 async def logout(response: Response):
-    """
-    Logout user by clearing authentication cookies.
-    
+    """Handles user logout.
+
+    This endpoint logs a user out by deleting their access and refresh tokens
+    from the cookies.
+
     Args:
-        response: FastAPI response object for clearing cookies
-    
+        response (Response): The FastAPI response object.
+
     Returns:
-        Success message
+        dict: A message indicating successful logout.
     """
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
@@ -212,19 +219,18 @@ async def refresh_token(
     response: Response = None,
     session: Session = Depends(get_session)
 ):
-    """
-    Refresh access token using refresh token.
-    
+    """Refreshes a user's access token.
+
+    This endpoint uses a refresh token to generate a new access token.
+    (Note: This is not yet implemented).
+
     Args:
-        refresh_token: Refresh token from cookie
-        response: FastAPI response object for setting cookies
-        session: Database session
-    
-    Returns:
-        TokenResponse with new access token
-    
+        refresh_token (str): The refresh token.
+        response (Response): The FastAPI response object.
+        session (Session): The database session.
+
     Raises:
-        HTTPException: If refresh token is invalid
+        HTTPException: Indicating that the endpoint is not implemented.
     """
     # This endpoint would need to extract refresh_token from cookie
     # and generate a new access_token

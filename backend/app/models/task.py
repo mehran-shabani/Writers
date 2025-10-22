@@ -7,6 +7,7 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 
 
 class TaskStatus(str, Enum):
+    """Enumeration for the status of a task."""
     PENDING = "pending"
     PROCESSING = "processing"
     IN_PROGRESS = "in_progress"
@@ -16,6 +17,21 @@ class TaskStatus(str, Enum):
 
 
 class Task(SQLModel, table=True):
+    """Represents a task in the database.
+
+    Attributes:
+        id (UUID): The unique identifier for the task.
+        title (str): The title of the task.
+        description (Optional[str]): A description of the task.
+        status (TaskStatus): The current status of the task.
+        user_id (UUID): The ID of the user who owns the task.
+        file_path (Optional[str]): The path to a file associated with the task.
+        result_path (Optional[str]): The path to the result of the task.
+        due_date (Optional[datetime]): The due date for the task.
+        completed_at (Optional[datetime]): The timestamp when the task was completed.
+        created_at (datetime): The timestamp when the task was created.
+        updated_at (datetime): The timestamp when the task was last updated.
+    """
     __tablename__ = "tasks"
     
     id: UUID = Field(default_factory=uuid4, primary_key=True)

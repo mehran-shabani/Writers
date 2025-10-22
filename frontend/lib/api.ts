@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-// Use Next.js API routes as proxy to backend
+/**
+ * Axios instance for making API requests.
+ *
+ * This instance is configured to use the Next.js API routes as a proxy to the
+ * backend, and it includes credentials to handle httpOnly cookies for
+ * authentication. It also has a response interceptor to handle 401
+ * Unauthorized errors by redirecting to the login page.
+ */
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true, // Important for sending httpOnly cookies

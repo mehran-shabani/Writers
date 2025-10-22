@@ -29,19 +29,25 @@ async def create_task(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Create a new task with optional file upload.
-    
+    """Handles the creation of a new task.
+
+    This endpoint allows for creating a task with a title, description, due date,
+    and an optional file upload. If a file is provided, it is saved to storage
+    and a background task is initiated to process it.
+
     Args:
-        title: Task title
-        description: Task description (optional)
-        due_date: Task due date (optional)
-        file: Uploaded file (optional)
-        session: Database session
-        current_user: Authenticated user
-    
+        title (str): The title of the task.
+        description (Optional[str]): A description of the task.
+        due_date (Optional[datetime]): The due date for the task.
+        file (Optional[UploadFile]): An optional file to be associated with the task.
+        session (Session): The database session.
+        current_user (User): The authenticated user creating the task.
+
     Returns:
-        TaskResponse with 202 Accepted status
+        TaskResponse: The newly created task.
+
+    Raises:
+        HTTPException: If the file fails to save.
     """
     # Handle file upload if provided
     file_path = None
@@ -100,18 +106,19 @@ async def get_tasks(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Get list of tasks for the current user.
-    
+    """Retrieves a list of tasks for the authenticated user.
+
+    This endpoint supports pagination and filtering by task status.
+
     Args:
-        skip: Number of records to skip (pagination)
-        limit: Maximum number of records to return
-        status_filter: Filter by task status (optional)
-        session: Database session
-        current_user: Authenticated user
-    
+        skip (int): The number of tasks to skip for pagination.
+        limit (int): The maximum number of tasks to return.
+        status_filter (Optional[TaskStatus]): A filter for the task status.
+        session (Session): The database session.
+        current_user (User): The authenticated user.
+
     Returns:
-        TaskListResponse with list of tasks and total count
+        TaskListResponse: A list of tasks and the total count.
     """
     # Build query
     statement = select(Task).where(Task.user_id == current_user.id)
@@ -143,19 +150,19 @@ async def get_task(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Get a specific task by ID.
-    
+    """Retrieves a specific task by its ID.
+
     Args:
-        task_id: UUID of the task
-        session: Database session
-        current_user: Authenticated user
-    
+        task_id (UUID): The ID of the task to retrieve.
+        session (Session): The database session.
+        current_user (User): The authenticated user.
+
     Returns:
-        TaskResponse
-    
+        TaskResponse: The requested task.
+
     Raises:
-        HTTPException: If task not found or user doesn't have access
+        HTTPException: If the task is not found or the user does not have
+                       permission to access it.
     """
     statement = select(Task).where(Task.id == task_id)
     task = session.exec(statement).first()
@@ -182,19 +189,20 @@ async def get_task_result(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """
-    Get the transcription result for a specific task.
-    
+    """Retrieves the result of a completed task.
+
     Args:
-        task_id: UUID of the task
-        session: Database session
-        current_user: Authenticated user
-    
+        task_id (UUID): The ID of the task.
+        session (Session): The database session.
+        current_user (User): The authenticated user.
+
     Returns:
-        JSON with transcription result
-    
+        Dict[str, Any]: The result of the task, typically in JSON format.
+
     Raises:
-        HTTPException: If task not found, user doesn't have access, or result not ready
+        HTTPException: If the task is not found, the user does not have
+                       permission, the task is not complete, or the result
+                       file cannot be read.
     """
     statement = select(Task).where(Task.id == task_id)
     task = session.exec(statement).first()
