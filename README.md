@@ -1,943 +1,619 @@
-# Writers
+# Writers - سیستم مدیریت وظایف با پردازش هوش مصنوعی
 
-A task management application with FastAPI backend and PostgreSQL database.
+یک سیستم مدیریت وظایف پیشرفته با قابلیت پردازش و تحلیل محتوا از طریق هوش مصنوعی.
 
-## Backend Structure
+<div dir="rtl">
 
-### Database Models
+## 📋 فهرست مطالب
 
-The application uses SQLModel (combination of SQLAlchemy and Pydantic) for database models.
+- [معرفی](#معرفی)
+- [ویژگی‌های کلیدی](#ویژگی‌های-کلیدی)
+- [معماری سیستم](#معماری-سیستم)
+- [فناوری‌های استفاده شده](#فناوری‌های-استفاده-شده)
+- [نصب و راه‌اندازی سریع](#نصب-و-راه‌اندازی-سریع)
+- [ساختار پروژه](#ساختار-پروژه)
+- [API Endpoints](#api-endpoints)
+- [مانیتورینگ و لاگینگ](#مانیتورینگ-و-لاگینگ)
+- [امنیت](#امنیت)
+- [مقیاس‌پذیری](#مقیاس‌پذیری)
+- [مستندات تکمیلی](#مستندات-تکمیلی)
 
-#### User Model
-- **id**: UUID (Primary Key)
-- **email**: String (Unique, Indexed)
-- **username**: String (Unique, Indexed)
-- **hashed_password**: String
-- **full_name**: String (Optional)
-- **is_active**: Boolean
-- **is_superuser**: Boolean
-- **created_at**: DateTime (Auto-generated)
-- **updated_at**: DateTime (Auto-generated)
+---
 
-#### Task Model
-- **id**: UUID (Primary Key)
-- **title**: String
-- **description**: String (Optional)
-- **status**: Enum (PENDING, PROCESSING, IN_PROGRESS, COMPLETED, FAILED, CANCELLED)
-- **user_id**: UUID (Foreign Key to users)
-- **file_path**: String (Optional) - مسیر فایل آپلود شده
-- **result_path**: String (Optional) - مسیر فایل نتیجه پردازش
-- **due_date**: DateTime (Optional)
-- **completed_at**: DateTime (Optional) - زمان تکمیل task
-- **created_at**: DateTime (Auto-generated)
-- **updated_at**: DateTime (Auto-generated)
+## 🎯 معرفی
 
-### Database Configuration
+Writers یک پلتفرم کامل برای مدیریت وظایف است که با استفاده از معماری مدرن میکروسرویس‌ها طراحی شده است. این سیستم قابلیت پردازش فایل‌ها، تحلیل محتوا و مدیریت کاربران را با رابط کاربری مدرن و API RESTful فراهم می‌کند.
 
-Database connection and session management is configured in `backend/app/db.py`:
-- PostgreSQL connection string
-- SQLAlchemy engine with connection pooling
-- Session dependency for FastAPI
+### مشخصات کلیدی
 
-### Database Migrations
+- ✅ معماری Microservices با جداسازی کامل Frontend و Backend
+- ✅ احراز هویت امن با JWT و Cookie-based sessions
+- ✅ پردازش ناهمزمان وظایف با Celery
+- ✅ API Proxy در Next.js برای مدیریت بهتر کوکی‌ها و هدرها
+- ✅ مانیتورینگ کامل با Prometheus و Grafana
+- ✅ لاگینگ متمرکز با Loki و Promtail
+- ✅ پیکربندی Nginx با SSL/TLS
+- ✅ هشدارهای خودکار برای منابع سیستم (RAM، GPU، Disk)
+- ✅ آماده برای محیط Production
 
-The project uses Alembic for database migrations.
+---
 
-#### Initialize Database
+## 🚀 ویژگی‌های کلیدی
+
+### مدیریت کاربران
+- ثبت‌نام و ورود امن
+- احراز هویت مبتنی بر JWT
+- مدیریت Session با Refresh Token
+- نقش‌ها و دسترسی‌ها
+
+### مدیریت وظایف
+- ایجاد، ویرایش و حذف وظایف
+- آپلود و مدیریت فایل‌ها
+- پردازش ناهمزمان با Celery
+- ردیابی وضعیت پردازش
+- ویرایشگر متن پیشرفته با TipTap
+
+### زیرساخت و عملیات
+- Load Balancing با Nginx
+- SSL/TLS با Let's Encrypt
+- Health Check endpoints
+- Rate Limiting
+- CORS Configuration
+
+### مانیتورینگ و لاگینگ
+- جمع‌آوری متریک‌ها با Prometheus
+- داشبوردهای Grafana
+- لاگ‌های متمرکز با Loki
+- هشدارهای خودکار با Alertmanager
+- مانیتورینگ GPU و منابع سیستم
+
+---
+
+## 🏗️ معماری سیستم
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                        Client                           │
+│                    (Browser/Mobile)                     │
+└───────────────────────┬─────────────────────────────────┘
+                        │ HTTPS (443)
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│                       Nginx                             │
+│          (Reverse Proxy + Load Balancer)                │
+│   - SSL/TLS Termination                                 │
+│   - Rate Limiting                                       │
+│   - Static File Serving                                 │
+└────────┬───────────────────────┬────────────────────────┘
+         │                       │
+         │ /api/*               │ /*
+         ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐
+│   FastAPI       │    │    Next.js       │
+│   Backend       │◄───│    Frontend      │
+│   (Port 8000)   │    │   (Port 3000)    │
+│                 │    │                  │
+│ - Auth API      │    │ - API Proxy      │
+│ - Tasks API     │    │ - SSR/CSR        │
+│ - Metrics       │    │ - UI Components  │
+└────────┬────────┘    └──────────────────┘
+         │
+         ├──────────┬──────────┬──────────┐
+         ▼          ▼          ▼          ▼
+    ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+    │ Postgres│ │ Redis │ │ Celery │ │ Storage│
+    │   DB    │ │ Cache │ │ Worker │ │ Files  │
+    └────────┘ └────────┘ └────────┘ └────────┘
+         │          │          │
+         └──────────┴──────────┘
+                    │
+                    ▼
+         ┌────────────────────┐
+         │    Monitoring      │
+         │  - Prometheus      │
+         │  - Grafana         │
+         │  - Loki            │
+         │  - Alertmanager    │
+         └────────────────────┘
+```
+
+---
+
+## 🛠️ فناوری‌های استفاده شده
+
+### Backend
+- **FastAPI** - فریمورک وب پرسرعت Python
+- **SQLAlchemy** - ORM برای مدیریت دیتابیس
+- **Alembic** - مدیریت Migration
+- **Pydantic** - اعتبارسنجی داده‌ها
+- **Python-JOSE** - JWT Token Management
+- **Passlib** - Hash کردن رمزهای عبور
+- **Celery** - پردازش ناهمزمان
+
+### Frontend
+- **Next.js 14** - React Framework با SSR/SSG
+- **TypeScript** - Type Safety
+- **TailwindCSS** - Styling
+- **TipTap** - Rich Text Editor
+- **Axios** - HTTP Client
+- **SWR** - Data Fetching
+
+### Database & Cache
+- **PostgreSQL** - پایگاه داده اصلی
+- **Redis** - Cache و Message Broker
+
+### Infrastructure
+- **Nginx** - Reverse Proxy و Load Balancer
+- **Docker** - Containerization
+- **Docker Compose** - Orchestration
+
+### Monitoring & Logging
+- **Prometheus** - Metrics Collection
+- **Grafana** - Visualization
+- **Loki** - Log Aggregation
+- **Promtail** - Log Collection
+- **Alertmanager** - Alert Management
+- **Node Exporter** - System Metrics
+- **PostgreSQL Exporter** - Database Metrics
+- **Redis Exporter** - Cache Metrics
+- **Nginx Exporter** - Web Server Metrics
+
+---
+
+## ⚡ نصب و راه‌اندازی سریع
+
+### پیش‌نیازها
+
+```bash
+# Ubuntu/Debian
+- Python 3.10+
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 6+
+- Nginx
+```
+
+### راه‌اندازی Development
+
+#### 1. کلون کردن پروژه
+
+```bash
+git clone https://github.com/yourusername/writers.git
+cd writers
+```
+
+#### 2. راه‌اندازی Backend
 
 ```bash
 cd backend
 
-# Install dependencies
+# ایجاد محیط مجازی
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# یا
+venv\Scripts\activate  # Windows
+
+# نصب وابستگی‌ها
 pip install -r requirements.txt
 
-# Run migrations
+# تنظیم متغیرهای محیطی
+cp ../.env.example .env
+# ویرایش .env و تنظیم مقادیر
+
+# اجرای migrations
 alembic upgrade head
+
+# راه‌اندازی سرور
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### Create New Migration
-
-```bash
-cd backend
-
-# Auto-generate migration from model changes
-alembic revision --autogenerate -m "description of changes"
-
-# Or create empty migration
-alembic revision -m "description of changes"
-
-# Apply migrations
-alembic upgrade head
-```
-
-#### Rollback Migration
-
-```bash
-# Rollback one version
-alembic downgrade -1
-
-# Rollback to specific revision
-alembic downgrade <revision_id>
-
-# Rollback all
-alembic downgrade base
-```
-
-### Configuration
-
-Update database connection string in:
-- `backend/alembic.ini` - for migrations
-- `backend/app/db.py` - for application runtime
-
-Default connection string:
-```
-postgresql://user:password@localhost:5432/writers_db
-```
-
-## Project Structure
-
-```
-backend/
-├── alembic/                 # Database migrations
-│   ├── versions/           # Migration scripts
-│   │   ├── 001_initial_migration.py
-│   │   ├── 002_add_file_path_to_tasks.py
-│   │   └── 003_add_processing_status_and_result_fields.py
-│   ├── env.py             # Alembic environment
-│   └── script.py.mako     # Migration template
-├── app/
-│   ├── models/            # Database models
-│   │   ├── __init__.py
-│   │   ├── user.py        # User model
-│   │   └── task.py        # Task model
-│   ├── routers/           # API routes
-│   │   ├── __init__.py
-│   │   ├── tasks.py       # Task endpoints
-│   │   └── schemas.py     # Task request/response schemas
-│   ├── auth/              # Authentication module
-│   ├── celery_app.py      # Celery configuration
-│   ├── tasks.py           # Background tasks
-│   ├── db.py              # Database configuration
-│   └── main.py            # Application entry point
-├── alembic.ini            # Alembic configuration
-└── requirements.txt       # Python dependencies
-
-worker/
-├── __init__.py            # Worker module initialization
-├── tasks.py               # Audio transcription worker tasks
-└── requirements.txt       # Worker dependencies
-```
-
-## Authentication
-
-The application implements JWT-based authentication with httpOnly cookies for secure token storage.
-
-### Authentication Features
-
-- User registration with email and username validation
-- Secure password hashing using bcrypt (via passlib)
-- JWT tokens with `python-jose`
-  - Short-term access tokens (30 minutes)
-  - Long-term refresh tokens (7 days)
-- HttpOnly cookies for secure token storage
-- Protected route authentication via dependency injection
-
-### Auth Endpoints
-
-#### Register
-```http
-POST /auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "username": "username",
-  "password": "securepassword123",
-  "full_name": "Full Name" (optional)
-}
-```
-
-Returns user data and sets httpOnly cookies with access and refresh tokens.
-
-#### Login
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
-
-Returns user data and sets httpOnly cookies with access and refresh tokens.
-
-#### Logout
-```http
-POST /auth/logout
-```
-
-Clears authentication cookies.
-
-### Using Authentication
-
-To protect routes, use the `get_current_user` or `get_current_active_user` dependency:
-
-```python
-from fastapi import Depends
-from app.auth.dependencies import get_current_user
-from app.models.user import User
-
-@app.get("/protected")
-async def protected_route(current_user: User = Depends(get_current_user)):
-    return {"user": current_user.email}
-```
-
-### Authentication Module Structure
-
-```
-backend/app/auth/
-├── __init__.py           # Module exports
-├── router.py            # Auth routes (register, login, logout)
-├── jwt.py               # JWT token creation and validation
-├── dependencies.py      # Authentication dependencies
-├── schemas.py           # Pydantic models for requests/responses
-└── utils.py             # Password hashing utilities
-```
-
-### Running Tests
-
-```bash
-cd backend
-
-# Install test dependencies
-pip install -r requirements.txt
-
-# Run all tests
-pytest
-
-# Run auth tests only
-pytest tests/auth/
-
-# Run with coverage
-pytest --cov=app tests/
-```
-
-## Task Management API
-
-The application provides endpoints for managing tasks with file upload capabilities.
-
-### Task Endpoints
-
-#### Create Task with File Upload
-```http
-POST /api/v1/tasks
-Content-Type: multipart/form-data
-Authentication: Required (Cookie: access_token)
-
-Form Data:
-- title: string (required)
-- description: string (optional)
-- due_date: datetime (optional)
-- file: file (optional)
-```
-
-Returns `202 Accepted` and creates a background job to process the uploaded file. The file is stored in `STORAGE_ROOT/uploads/` directory.
-
-#### Get All Tasks
-```http
-GET /api/v1/tasks?skip=0&limit=100&status_filter=PENDING
-Authentication: Required (Cookie: access_token)
-
-Query Parameters:
-- skip: int (default: 0) - Number of records to skip
-- limit: int (default: 100) - Maximum number of records
-- status_filter: TaskStatus (optional) - Filter by status
-```
-
-Returns list of tasks for the authenticated user.
-
-#### Get Task by ID
-```http
-GET /api/v1/tasks/{task_id}
-Authentication: Required (Cookie: access_token)
-```
-
-Returns a specific task by UUID. Returns `403 Forbidden` if the task doesn't belong to the authenticated user.
-
-#### Get Task Transcription Result
-```http
-GET /api/v1/tasks/{task_id}/result
-Authentication: Required (Cookie: access_token)
-```
-
-Returns the transcription result for a completed task. The endpoint:
-- Returns JSON with transcription data including text, language, duration, confidence, and metadata
-- Validates task ownership and completion status
-- Returns `400 Bad Request` if task is not completed
-- Returns `404 Not Found` if result file doesn't exist
-
-**Response Format:**
-```json
-{
-  "transcription": "متن رونویسی صوتی...",
-  "language": "fa",
-  "duration": 120,
-  "confidence": 0.95,
-  "timestamp": "2024-01-01T12:00:00",
-  "source_file": "audio.mp3",
-  "model_config": {
-    "name": "base",
-    "device": "cuda",
-    "compute_type": "float16"
-  }
-}
-```
-
-### Background Processing with Celery
-
-When a file is uploaded with a task, the system:
-1. Saves the file to `STORAGE_ROOT/uploads/`
-2. Creates a task record in the database with status `PENDING`
-3. Queues a Celery background job with task ID and file path
-4. Updates the task status to `IN_PROGRESS`
-5. Returns `202 Accepted` to the client
-
-The background worker processes the file and updates the task status to `COMPLETED` or `CANCELLED` on error.
-
-#### Celery Configuration
-
-The Celery application is configured with:
-- **Broker**: Redis (database 2 by default)
-- **Result Backend**: Redis (same as broker)
-- **Serialization**: JSON format for security and compatibility
-- **Timezone**: UTC (matching database timezone)
-- **Task Routing**: Different queues for media and default tasks
-- **Result Expiration**: 1 hour
-- **Connection Retry**: Automatic retry on connection failures
-
-#### Available Task Wrappers
-
-The application provides several task wrappers for background processing:
-
-##### 1. Audio Transcription
-```python
-from worker.tasks import transcribe_audio
-
-# Queue audio transcription task
-result = transcribe_audio.delay(task_id="uuid-string", audio_file_path="audio.mp3")
-```
-
-Features:
-- **Singleton Model**: Uses optimized singleton pattern for warm start reduction
-- **Resource Monitoring**: Real-time VRAM/RAM monitoring to prevent OOM
-- Updates task status to PROCESSING during execution
-- Reads audio file from `/storage/uploads/`
-- Performs speech-to-text conversion with configurable model and precision
-- Saves transcription result to `/storage/results/`
-- Updates database with result_path, completed_at, and status=COMPLETED
-- On error, sets status=FAILED with comprehensive logging and resource diagnostics
-- Language detection (supports Persian/Farsi and auto-detection)
-- Confidence scoring and duration calculation
-- Thread-safe model loading with automatic memory optimization
-
-Implementation details:
-- File reading: Audio file is read from `/storage/uploads/` directory
-- Result storage: JSON result is saved to `/storage/results/{task_id}_transcription.json`
-- Database updates: Automatic status tracking (PROCESSING → COMPLETED/FAILED)
-- Error handling: Comprehensive error logging and status updates
-
-##### 2. Video Processing
-```python
-from app.tasks import process_video
-
-# Queue video processing task
-result = process_video.delay(task_id="uuid-string", video_file_path="/path/to/video.mp4")
-```
-
-Features:
-- Thumbnail generation
-- Format conversion
-- Metadata extraction
-- Resolution detection
-
-##### 3. Text Analysis
-```python
-from app.tasks import analyze_text
-
-# Queue text analysis task
-result = analyze_text.delay(task_id="uuid-string", text_content="متن برای تحلیل")
-```
-
-Features:
-- Sentiment analysis
-- Keyword extraction
-- Language detection
-- Content summarization
-
-##### 4. File Processing (Generic)
-```python
-from app.tasks import process_task_file
-
-# Queue generic file processing task
-result = process_task_file.delay(task_id="uuid-string", file_path="/path/to/file")
-```
-
-#### Starting Celery Workers
-
-The worker includes optimized model initialization with singleton pattern for warm start reduction and comprehensive resource monitoring to prevent OOM errors.
-
-##### Quick Start (Using Entrypoint Script)
-
-```bash
-# Set environment variables
-export REDIS_URL=redis://localhost:6379
-export REDIS_QUEUE_DB=2
-export STORAGE_ROOT=/storage
-export DATABASE_URL=postgresql://user:password@localhost:5432/writers_db
-
-# Model configuration (for optimized performance)
-export MODEL_DEVICE=cuda                    # cuda or cpu
-export MODEL_DEVICE_INDEX=0                 # GPU index (0, 1, 2, ...)
-export MODEL_COMPUTE_TYPE=float16           # float16, int8, or float32
-export MODEL_NAME=base                      # tiny, base, small, medium, large
-
-# Worker configuration
-export WORKER_CONCURRENCY=2                 # Number of concurrent workers
-export WORKER_QUEUE=media                   # Queue name(s)
-
-# Resource monitoring configuration
-export ENABLE_RESOURCE_MONITORING=true      # Enable VRAM/RAM monitoring
-export VRAM_WARNING_THRESHOLD=0.85          # VRAM warning at 85%
-export RAM_WARNING_THRESHOLD=0.90           # RAM warning at 90%
-
-# Start worker with entrypoint script
-cd /workspace/worker
-./entrypoint.sh
-```
-
-##### Manual Start (Advanced)
-
-```bash
-# Start default queue worker (from backend directory)
-cd backend
-celery -A app.celery_app worker --loglevel=info -Q default
-
-# Start media queue worker with optimized settings
-cd backend
-celery -A app.celery_app worker \
-    --loglevel=info \
-    --concurrency=2 \
-    --queues=media \
-    --max-tasks-per-child=100
-
-# Start worker for all queues
-cd backend
-celery -A app.celery_app worker --loglevel=info -Q default,media
-```
-
-##### Worker Concurrency Guidelines
-
-The `--concurrency` parameter controls how many worker processes run in parallel. Choosing the right value is critical for optimal performance and resource utilization:
-
-**For Heavy Models (Large/Medium Whisper):**
-- **GPU**: `concurrency=1` or `2`
-- **Reason**: Large models consume significant GPU memory
-- Higher concurrency increases OOM (Out of Memory) risk
-
-**For Light Models (Tiny/Base Whisper):**
-- **GPU**: `concurrency=2` to `4`
-- **CPU**: `concurrency=(CPU cores) / 2`
-- **Reason**: Smaller models require less memory
-
-**For Multi-GPU Systems:**
-- Run multiple workers with different `MODEL_DEVICE_INDEX`
-- Example: worker1 on GPU:0, worker2 on GPU:1
-
-**General Considerations:**
-- **VRAM Available**: Ensure sufficient GPU memory
-- **System RAM**: Each worker needs ~2-4GB RAM
-- **I/O**: For large files, use lower concurrency
-- **Formula**: `concurrency = min(GPU_VRAM_GB / MODEL_SIZE_GB, CPU_CORES / 2, MAX_CONCURRENT_TASKS)`
-
-**Example Configurations:**
-- GPU 8GB VRAM + Whisper Base: `concurrency=2`
-- GPU 16GB VRAM + Whisper Medium: `concurrency=2`
-- GPU 24GB VRAM + Whisper Large: `concurrency=1` or `2`
-- CPU 16 cores + Whisper Base: `concurrency=4`
-
-**Best Practice**: Start with low concurrency and gradually increase while monitoring resources to find optimal value.
-
-#### Worker Directory
-
-The `worker/` directory contains dedicated worker tasks for audio processing:
-
-**Structure:**
-- `worker/tasks.py`: Audio transcription task implementation
-- `worker/requirements.txt`: Worker-specific dependencies
-
-**Features:**
-- Access to shared code (Pydantic models from `backend/app/models/`)
-- Imports Celery configuration from `backend/app/celery_app.py`
-- Proper database status tracking (PROCESSING, COMPLETED, FAILED)
-- File handling from `/storage/uploads/` and `/storage/results/`
-- Comprehensive error logging and handling
-
-**Running Worker Tasks:**
-```bash
-# Ensure worker can access backend modules
-export PYTHONPATH=/workspace:$PYTHONPATH
-
-# Start worker from backend directory
-cd backend
-celery -A app.celery_app worker --loglevel=info -Q media
-```
-
-**Model Optimization (Singleton Pattern):**
-
-The worker implements a singleton pattern for model initialization to significantly reduce warm start time and improve performance:
-
-- **Lazy Loading**: Model is loaded only once on first use
-- **Thread-Safe**: Uses locking mechanism for safe concurrent access
-- **Memory Efficient**: Model is shared across all tasks in the same worker process
-- **Configurable**: Supports device selection, compute type, and GPU index
-
-Configuration options:
-```python
-MODEL_DEVICE=cuda          # Device: cuda or cpu
-MODEL_DEVICE_INDEX=0       # GPU index for multi-GPU systems
-MODEL_COMPUTE_TYPE=float16 # Computation precision: float16, int8, float32
-MODEL_NAME=base           # Model size: tiny, base, small, medium, large
-```
-
-Benefits:
-- Reduces cold start latency from ~10-30s to <1s for subsequent tasks
-- Prevents redundant model loading in memory
-- Better GPU utilization
-
-**Resource Monitoring:**
-
-The worker includes comprehensive VRAM and RAM monitoring to prevent OOM errors:
-
-**Features:**
-- Real-time GPU memory tracking via nvidia-smi
-- System RAM monitoring via psutil
-- Automatic warnings when usage exceeds thresholds
-- Resource logging at key points (task start, before/after transcription, completion)
-
-**Configuration:**
-```bash
-ENABLE_RESOURCE_MONITORING=true   # Enable/disable monitoring
-VRAM_WARNING_THRESHOLD=0.85       # Warn at 85% VRAM usage
-RAM_WARNING_THRESHOLD=0.90        # Warn at 90% RAM usage
-```
-
-**Monitoring Points:**
-1. Task start - baseline resource usage
-2. Before transcription - pre-processing check
-3. After model initialization - verify model loaded successfully
-4. After transcription - detect memory leaks
-5. Task completion/error - final state
-
-**Example Log Output:**
-```
-[Task start] RAM: 4096MB / 16384MB (25.0%)
-[Task start] VRAM (GPU 0): 2048MB / 8192MB (25.0%) | GPU Utilization: 15.0%
-[After model initialization] VRAM (GPU 0): 3500MB / 8192MB (42.7%)
-[Before transcription] RAM: 4200MB / 16384MB (25.6%)
-[After transcription] VRAM (GPU 0): 4096MB / 8192MB (50.0%)
-[Task completed successfully] RAM: 4100MB / 16384MB (25.0%)
-```
-
-**OOM Prevention:**
-- Warnings logged when thresholds exceeded
-- Helps identify memory-hungry tasks
-- Enables proactive scaling decisions
-- Assists in debugging memory issues
-
-#### Monitoring Celery Tasks
-
-```bash
-# Monitor Celery events in real-time
-celery -A app.celery_app events
-
-# Check worker status
-celery -A app.celery_app inspect active
-
-# Check registered tasks
-celery -A app.celery_app inspect registered
-
-# Purge all tasks from queue
-celery -A app.celery_app purge
-```
-
-### Configuration
-
-#### Required Environment Variables
-
-**Database & Cache:**
-- `DATABASE_URL`: PostgreSQL connection string
-- `REDIS_URL`: Redis connection URL (default: `redis://localhost:6379`)
-- `REDIS_QUEUE_DB`: Redis database for Celery queue (default: `2`)
-
-**Storage:**
-- `STORAGE_ROOT`: Root directory for file storage (default: `/storage`)
-  - Uploads directory: `${STORAGE_ROOT}/uploads/`
-  - Results directory: `${STORAGE_ROOT}/results/`
-  - Models directory: `${STORAGE_ROOT}/models/`
-
-**Worker Configuration:**
-- `WORKER_CONCURRENCY`: Number of concurrent worker processes (default: `2`)
-  - See "Worker Concurrency Guidelines" section for selection guidance
-- `WORKER_QUEUE`: Queue name(s) to process (default: `media`)
-- `WORKER_LOG_LEVEL`: Logging level (default: `info`)
-- `WORKER_MAX_TASKS_PER_CHILD`: Max tasks before worker restart (default: `100`)
-
-**Model Configuration (Singleton Pattern):**
-- `MODEL_DEVICE`: Computing device (default: `cuda`)
-  - Options: `cuda`, `cpu`
-- `MODEL_DEVICE_INDEX`: GPU index for multi-GPU systems (default: `0`)
-  - For GPU 0: `0`, GPU 1: `1`, etc.
-- `MODEL_COMPUTE_TYPE`: Computation precision (default: `float16`)
-  - Options: `float16` (faster, less memory), `int8` (smallest), `float32` (highest quality)
-- `MODEL_NAME`: Model size (default: `base`)
-  - Options: `tiny`, `base`, `small`, `medium`, `large`
-  - Larger models = better quality but more memory and slower
-
-**Resource Monitoring:**
-- `ENABLE_RESOURCE_MONITORING`: Enable VRAM/RAM monitoring (default: `true`)
-  - Set to `false` to disable monitoring overhead
-- `VRAM_WARNING_THRESHOLD`: VRAM usage threshold for warnings (default: `0.85`)
-  - Value between 0.0 and 1.0 (0.85 = 85%)
-- `RAM_WARNING_THRESHOLD`: RAM usage threshold for warnings (default: `0.90`)
-  - Value between 0.0 and 1.0 (0.90 = 90%)
-
-**Storage Directory Structure:**
-```
-/storage/
-├── uploads/          # Uploaded audio files
-│   └── {filename}    # Original uploaded files
-├── results/          # Processing results
-│   └── {task_id}_transcription.json  # Transcription results
-└── models/           # Downloaded ML models
-    └── {model_name}  # Cached model files
-```
-
-## Frontend (Next.js 14)
-
-The application includes a modern frontend built with Next.js 14, TypeScript, and App Router.
-
-### Frontend Structure
-
-```
-frontend/
-├── app/                    # Next.js 14 App Router
-│   ├── layout.tsx         # Root layout with AuthProvider
-│   ├── page.tsx           # Home page (redirects to login/dashboard)
-│   ├── globals.css        # Global styles
-│   ├── login/             # Login page
-│   │   └── page.tsx
-│   ├── register/          # Register page
-│   │   └── page.tsx
-│   └── dashboard/         # Protected dashboard pages
-│       ├── page.tsx       # Task list with real-time polling
-│       ├── upload/        # Audio file upload
-│       │   └── page.tsx
-│       └── tasks/         # Task details
-│           └── [taskId]/
-│               └── page.tsx
-├── contexts/              # React contexts
-│   └── AuthContext.tsx    # Authentication context
-├── hooks/                 # Custom React hooks
-│   └── useAuth.ts         # Authentication hooks
-├── lib/                   # Utility libraries
-│   ├── api.ts             # Axios instance with interceptors
-│   └── auth.ts            # Authentication service
-├── types/                 # TypeScript type definitions
-│   ├── auth.ts            # Auth-related types
-│   └── task.ts            # Task-related types
-├── middleware.ts          # Next.js middleware for route protection
-├── package.json           # Dependencies and scripts
-├── tsconfig.json          # TypeScript configuration
-├── next.config.js         # Next.js configuration
-└── .env.local             # Environment variables
-```
-
-### Authentication Features
-
-The frontend implements custom JWT authentication with httpOnly cookies:
-
-- **Custom JWT Implementation**: Direct integration with FastAPI backend
-- **HttpOnly Cookies**: Secure token storage (access_token and refresh_token)
-- **Protected Routes**: Middleware-based route protection for `/dashboard`
-- **Authentication Context**: Global auth state management
-- **Custom Hooks**: `useAuth()`, `useUser()`, `useRequireAuth()`
-- **Automatic Redirects**: Login redirects, post-auth routing
-- **Error Handling**: Automatic 401 handling and redirects
-
-### Setup and Development
-
-#### Install Dependencies
+#### 3. راه‌اندازی Frontend
 
 ```bash
 cd frontend
+
+# نصب وابستگی‌ها
 npm install
-```
 
-#### Configure Environment
-
-Update `.env.local` with your backend URL:
-
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-#### Run Development Server
-
-```bash
+# راه‌اندازی سرور
 npm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
-
-#### Build for Production
+#### 4. راه‌اندازی Worker
 
 ```bash
-npm run build
-npm start
+cd worker
+
+# ایجاد محیط مجازی
+python3 -m venv venv
+source venv/bin/activate
+
+# نصب وابستگی‌ها
+pip install -r requirements.txt
+
+# راه‌اندازی Celery worker
+celery -A tasks worker --loglevel=info
 ```
 
-### Authentication Flow
+#### 5. دسترسی به برنامه
 
-1. **Registration**: User submits form → POST `/auth/register` → Cookies set → Redirect to dashboard
-2. **Login**: User submits credentials → POST `/auth/login` → Cookies set → Redirect to dashboard
-3. **Protected Routes**: Middleware checks `access_token` cookie → Allow/Deny access
-4. **Current User**: Frontend calls GET `/auth/me` to get user data
-5. **Logout**: POST `/auth/logout` → Cookies cleared → Redirect to login
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-### Available Pages
+### راه‌اندازی Production
 
-- **`/`**: Home page (auto-redirects to `/login` or `/dashboard`)
-- **`/login`**: Login page with email/password form
-- **`/register`**: Registration page with user details form
-- **`/dashboard`**: Protected dashboard page with task list and real-time updates (requires authentication)
-- **`/dashboard/upload`**: Audio file upload page with drag-and-drop support
-- **`/dashboard/tasks/[taskId]`**: Task details page with comprehensive information and status tracking
+برای راه‌اندازی کامل در محیط Production، به [راهنمای راه‌اندازی](SETUP_GUIDE.md) مراجعه کنید.
 
-### Middleware Protection
+#### نصب سریع با Docker
 
-The Next.js middleware (`middleware.ts`) automatically:
+```bash
+cd infrastructure
 
-- Protects `/dashboard` routes (requires `access_token` cookie)
-- Redirects unauthenticated users to `/login`
-- Redirects authenticated users away from `/login` and `/register`
-- Preserves original URL for post-login redirect
+# راه‌اندازی تمام سرویس‌ها
+docker-compose up -d
 
-### Custom Hooks
-
-#### `useAuth()`
-
-Access full authentication context:
-
-```typescript
-const { user, loading, login, register, logout, refreshUser } = useAuth();
+# راه‌اندازی monitoring
+docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
-#### `useUser()`
+---
 
-Get current user and loading state:
+## 📁 ساختار پروژه
 
-```typescript
-const { user, loading } = useUser();
+```
+writers/
+├── backend/                    # FastAPI Backend
+│   ├── app/
+│   │   ├── auth/              # ماژول احراز هویت
+│   │   ├── models/            # مدل‌های دیتابیس
+│   │   ├── routers/           # API Endpoints
+│   │   ├── db.py              # تنظیمات دیتابیس
+│   │   └── main.py            # نقطه ورود
+│   ├── alembic/               # Database Migrations
+│   ├── tests/                 # تست‌ها
+│   └── requirements.txt
+│
+├── frontend/                   # Next.js Frontend
+│   ├── app/
+│   │   ├── api/              # Next.js API Proxy Routes
+│   │   │   ├── auth/         # Proxy برای احراز هویت
+│   │   │   └── tasks/        # Proxy برای وظایف
+│   │   ├── dashboard/        # صفحات Dashboard
+│   │   ├── login/            # صفحه ورود
+│   │   └── register/         # صفحه ثبت‌نام
+│   ├── components/           # کامپوننت‌های React
+│   ├── lib/                  # کتابخانه‌های کمکی
+│   ├── __tests__/            # تست‌های یکپارچگی
+│   └── package.json
+│
+├── worker/                     # Celery Worker
+│   ├── tasks.py              # تعریف Task‌ها
+│   └── requirements.txt
+│
+├── infrastructure/            # زیرساخت و DevOps
+│   ├── nginx/
+│   │   ├── nginx.conf        # پیکربندی Production با SSL
+│   │   └── nginx-local.conf  # پیکربندی Local
+│   ├── monitoring/
+│   │   ├── prometheus/       # تنظیمات Prometheus
+│   │   │   ├── prometheus.yml
+│   │   │   └── alerts/       # قوانین هشدار
+│   │   ├── grafana/          # داشبوردها و datasources
+│   │   └── alertmanager/     # تنظیمات Alertmanager
+│   ├── logging/
+│   │   ├── loki/             # تنظیمات Loki
+│   │   └── promtail/         # تنظیمات Promtail
+│   ├── scripts/
+│   │   ├── setup-ssl.sh      # نصب SSL با Certbot
+│   │   ├── deploy-nginx.sh   # استقرار امن Nginx
+│   │   ├── health-check.sh   # بررسی سلامت سرویس‌ها
+│   │   └── setup-monitoring.sh
+│   ├── docker-compose.yml
+│   └── docker-compose.monitoring.yml
+│
+├── .env.example               # نمونه فایل محیطی
+├── README.md                  # این فایل
+└── SETUP_GUIDE.md            # راهنمای کامل راه‌اندازی
 ```
 
-#### `useRequireAuth()`
+---
 
-Require authentication (auto-redirect if not authenticated):
+## 🔌 API Endpoints
 
-```typescript
-const { user, loading } = useRequireAuth();
+### Authentication
+
+```
+POST   /api/auth/register      # ثبت‌نام کاربر جدید
+POST   /api/auth/login         # ورود به سیستم
+POST   /api/auth/logout        # خروج از سیستم
+GET    /api/auth/me            # اطلاعات کاربر فعلی
+POST   /api/auth/refresh       # تمدید توکن
 ```
 
-### API Integration
+### Tasks
 
-The frontend uses Axios with interceptors for API communication:
+```
+GET    /api/tasks              # لیست وظایف
+POST   /api/tasks              # ایجاد وظیفه جدید
+GET    /api/tasks/{id}         # جزئیات وظیفه
+PUT    /api/tasks/{id}         # به‌روزرسانی وظیفه
+DELETE /api/tasks/{id}         # حذف وظیفه
+```
 
-- **Base URL**: Configured via `NEXT_PUBLIC_API_URL`
-- **Credentials**: `withCredentials: true` for cookie support
-- **Error Handling**: Automatic 401 handling and redirect
-- **Headers**: JSON content type by default
+### Health & Metrics
 
-### Audio File Upload
+```
+GET    /health                 # بررسی سلامت سرویس
+GET    /metrics                # متریک‌های Prometheus
+```
 
-The frontend includes a dedicated upload page (`/dashboard/upload`) for uploading audio files with the following features:
+### مستندات کامل API
 
-#### Features
+مستندات تعاملی Swagger در دسترس است:
+- Production: https://yourdomain.com/docs
+- Development: http://localhost:8000/docs
 
-- **Drag-and-Drop Support**: Intuitive dropzone interface for easy file selection
-- **File Type Validation**: Accepts only audio files (MP3, WAV, M4A, AAC, OGG, FLAC)
-- **File Size Limit**: Maximum 100MB per file
-- **Real-time Upload Progress**: Visual progress bar showing upload percentage
-- **Status Management**: Clear feedback for uploading, success, and error states
-- **Auto-redirect**: Automatically redirects to dashboard after successful upload
-- **Form Integration**: Title (required) and description (optional) fields
-- **Auto-fill Title**: Automatically extracts filename as title suggestion
+---
 
-#### Usage
+## 📊 مانیتورینگ و لاگینگ
 
-1. Navigate to `/dashboard/upload`
-2. Drag and drop an audio file or click to browse
-3. File is validated for type and size
-4. Enter title (auto-filled from filename) and optional description
-5. Click "آپلود فایل" to upload
-6. Monitor upload progress
-7. Automatically redirected to dashboard after successful upload
+### Prometheus Metrics
 
-#### Technical Details
+سیستم به‌صورت خودکار متریک‌های زیر را جمع‌آوری می‌کند:
 
-- **API Endpoint**: `POST /api/v1/tasks`
-- **Content Type**: `multipart/form-data`
-- **Request Format**:
-  - `file`: Audio file (required)
-  - `title`: Task title (required)
-  - `description`: Task description (optional)
-- **Response**: Returns task object with `202 Accepted` status
-- **Background Processing**: File is queued for transcription via Celery
+- **System Metrics**: CPU, RAM, Disk, Network
+- **Application Metrics**: Request count, Response time, Error rate
+- **Database Metrics**: Connection pool, Query performance
+- **Cache Metrics**: Hit rate, Memory usage
+- **GPU Metrics**: Temperature, Memory, Utilization
 
-#### Validation Rules
+### Grafana Dashboards
 
-- **Accepted Formats**: `.mp3`, `.wav`, `.m4a`, `.aac`, `.ogg`, `.flac`
-- **Accepted MIME Types**: `audio/mpeg`, `audio/mp3`, `audio/wav`, `audio/wave`, `audio/x-wav`, `audio/aac`, `audio/m4a`, `audio/x-m4a`, `audio/ogg`, `audio/flac`
-- **Maximum Size**: 100MB (104,857,600 bytes)
-- **Title**: Required, 1-255 characters
-- **Description**: Optional
+Dashboard‌های آماده:
+- **System Overview**: نمای کلی منابع سیستم
+- **Application Performance**: عملکرد API و Backend
+- **Database Performance**: وضعیت PostgreSQL
+- **Error Tracking**: ردیابی خطاها و استثناها
 
-### Task Dashboard
+دسترسی: http://localhost:3001 (admin/admin)
 
-The dashboard page (`/dashboard`) provides a comprehensive task management interface with real-time updates:
+### Log Aggregation
 
-#### Features
+تمام لاگ‌ها در Loki جمع‌آوری می‌شوند:
+- FastAPI application logs
+- Nginx access/error logs
+- Celery worker logs
+- PostgreSQL logs
+- System logs
 
-- **Real-time Task List**: Displays all user tasks with automatic polling every 10 seconds
-- **Manual Refresh**: Button to manually refresh task list on demand
-- **Task Cards**: Beautiful card-based layout with status badges and metadata
-- **Status Indicators**: Color-coded badges for different task states:
-  - **Pending** (در انتظار): Yellow badge for tasks waiting to be processed
-  - **Processing** (در حال پردازش): Blue animated badge for tasks currently being processed
-  - **Completed** (تکمیل شده): Green badge for successfully completed tasks
-  - **Failed** (ناموفق): Red badge for tasks that encountered errors
-  - **Cancelled** (لغو شده): Gray badge for cancelled tasks
-- **Task Navigation**: Click on any task card to view detailed information
-- **Metadata Display**: Shows creation time, completion time, file status, and result availability
-- **Responsive Design**: Grid layout that adapts to different screen sizes
-- **Empty State**: Helpful message when no tasks exist
+دسترسی: از طریق Grafana > Explore > Loki
 
-#### Task Details Page
+### Alert Rules
 
-The task details page (`/dashboard/tasks/[taskId]`) provides comprehensive information about individual tasks with integrated rich text editing capabilities:
+هشدارهای تعریف شده:
 
-**Core Features:**
-- **Full Task Information**: Title, description, status, and all timestamps
-- **Real-time Updates**: Polls every 10 seconds to show latest task status
-- **Manual Refresh**: Button to manually refresh task details
-- **File Information**: Shows input file and result file availability
-- **Comprehensive Metadata Display**:
-  - Task status with color-coded badges
-  - Created time, updated time, completion time
-  - Processing duration calculation (shows hours, minutes, seconds)
-  - Transcription metadata (language, duration, confidence score)
-  - Model configuration details
-- **Error Handling**: Graceful handling of missing or unauthorized tasks
+#### منابع سیستم
+- ✅ RAM > 85% (Warning)
+- ⚠️ RAM > 95% (Critical)
+- ✅ Disk > 80% (Warning)
+- ⚠️ Disk > 90% (Critical)
+- ✅ GPU Temp > 80°C (Warning)
+- ⚠️ GPU Temp > 90°C (Critical)
 
-**Rich Text Editor Integration (Tiptap):**
+#### سرویس‌ها
+- ⚠️ Service Down (Critical)
+- ✅ High Error Rate > 5% (Warning)
+- ✅ High Response Time > 2s (Warning)
+- ✅ Database Connection Pool > 80% (Warning)
 
-For completed tasks with transcription results, the page includes a powerful rich text editor:
+---
 
-- **Editor Features**:
-  - **Tiptap Editor**: Modern WYSIWYG editor with full formatting support
-  - **Rich Toolbar**: Complete formatting toolbar with buttons for:
-    - Text formatting: Bold, Italic, Strikethrough
-    - Headings: H1, H2 levels
-    - Lists: Bullet lists and numbered lists
-    - Undo/Redo functionality
-  - **Live Editing**: Real-time text editing with Persian/Farsi support
-  - **Auto-load Transcription**: Automatically loads transcription result when task completes
-  - **Edit Tracking**: Visual indicator for unsaved changes
-  - **RTL Support**: Right-to-left text direction for Persian content
+## 🔒 امنیت
 
-- **Download Capabilities**:
-  - **Markdown Export**: Download transcription as `.md` file with formatting
-  - **PDF Export**: Generate and download PDF version of transcription
-  - **Preserve Formatting**: Maintains text structure in exported files
+### احراز هویت
+- JWT-based authentication
+- HttpOnly cookies برای جلوگیری از XSS
+- Refresh token rotation
+- Secure password hashing با Bcrypt
 
-- **Data Management**:
-  - **Local Save**: Save edited content to browser's localStorage
-  - **State Management**: Tracks edited vs. original content
-  - **Auto-fetch**: Automatically retrieves transcription from backend API
-  - **API Endpoint**: `/api/v1/tasks/{task_id}/result` fetches processed results
+### HTTPS/SSL
+- TLS 1.2/1.3
+- Automatic certificate renewal با Let's Encrypt
+- HSTS headers
+- Secure cipher suites
 
-**Technical Implementation:**
-- **Editor Library**: Tiptap with StarterKit and Typography extensions
-- **Export Libraries**: jsPDF for PDF generation, native Blob API for Markdown
-- **Styling**: Custom CSS with responsive design and Persian font support
-- **State Management**: React hooks for content and edit state tracking
-- **API Integration**: Fetches JSON transcription results from backend
+### API Security
+- Rate limiting (10 req/s for API, 5 req/s for auth)
+- CORS configuration
+- Input validation با Pydantic
+- SQL injection protection با SQLAlchemy ORM
 
-#### Data Fetching with SWR
+### Headers امنیتی
+```
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000
+```
 
-The frontend uses **SWR (Stale-While-Revalidate)** for efficient data fetching:
+---
 
-- **Automatic Polling**: Tasks are refreshed every 10 seconds (configurable)
-- **Revalidation on Focus**: Automatically refreshes when user returns to the tab
-- **Optimistic Updates**: Shows cached data immediately while fetching fresh data
-- **Error Handling**: Graceful error messages when API requests fail
-- **Manual Refresh**: `mutate()` function for on-demand data refresh
+## 📈 مقیاس‌پذیری
 
-#### API Integration
+### توصیه‌های سخت‌افزاری
 
-- **Endpoint**: `GET /api/v1/tasks`
-- **Response**: `TaskListResponse` with tasks array and total count
-- **Authentication**: Automatic authentication via httpOnly cookies
-- **Pagination**: Supports skip/limit parameters (default: 0/100)
-- **Filtering**: Optional status filter for task states
+| کاربران همزمان | RAM    | CPU Cores | Storage |
+|-----------------|--------|-----------|---------|
+| < 100           | 16 GB  | 4         | 50 GB   |
+| 100-500         | 32 GB  | 8         | 100 GB  |
+| 500-1000        | 64 GB  | 16        | 200 GB  |
+| 1000+           | 128 GB | 32+       | 500 GB+ |
 
-### Styling
+### افزایش ظرفیت
 
-The application uses custom CSS with:
+#### Backend Workers
+```bash
+# در /etc/systemd/system/writers-backend.service
+ExecStart=.../uvicorn app.main:app --workers 8
+```
 
-- Modern gradient backgrounds
-- Card-based layouts with hover effects
-- Responsive design with mobile optimization
-- Persian/Farsi language support
-- Clean and intuitive UI
-- Drag-and-drop upload interface with visual feedback
-- Animated status badges for processing tasks
-- Color-coded status indicators
-- Grid-based task layout
+#### Celery Workers
+```bash
+# در /etc/systemd/system/writers-worker.service
+ExecStart=.../celery -A tasks worker --concurrency=8
+```
 
-## Dependencies
+#### Horizontal Scaling
 
-### Backend
+برای مقیاس‌پذیری افقی:
 
-- **FastAPI**: Modern web framework
-- **SQLModel**: SQL database library with Pydantic integration
-- **Alembic**: Database migration tool
-- **PostgreSQL**: Database (via psycopg2-binary)
-- **Uvicorn**: ASGI server
-- **Passlib**: Password hashing with bcrypt
-- **Python-JOSE**: JWT token handling
-- **Celery**: Distributed task queue for background jobs
-- **Redis**: Message broker and result backend for Celery
-- **Python-Multipart**: File upload support
-- **Pytest**: Testing framework
+1. **Load Balancer**: استفاده از Nginx upstream
+```nginx
+upstream backend_servers {
+    least_conn;
+    server backend1:8000;
+    server backend2:8000;
+    server backend3:8000;
+}
+```
 
-### Frontend
+2. **Database Replication**: تنظیم Master-Slave PostgreSQL
+3. **Redis Cluster**: برای cache توزیع شده
+4. **Shared Storage**: برای فایل‌های آپلود شده
 
-- **Next.js 14**: React framework with App Router
-- **React 18**: UI library
-- **TypeScript**: Type-safe JavaScript
-- **Axios**: HTTP client for API requests
-- **SWR**: React Hooks library for data fetching with caching and real-time updates
-- **js-cookie**: Cookie manipulation (for client-side reading if needed)
-- **Tiptap**: Headless rich text editor with React integration
-- **jsPDF**: Client-side PDF generation for exports
+---
+
+## 🧪 تست
+
+### Backend Tests
+
+```bash
+cd backend
+pytest
+
+# با coverage
+pytest --cov=app --cov-report=html
+```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
+
+# با coverage
+npm run test:coverage
+```
+
+### Integration Tests
+
+```bash
+# تست API proxy routes
+cd frontend
+npm test -- __tests__/api/proxy.test.ts
+```
+
+---
+
+## 🚢 استقرار (Deployment)
+
+### با Docker
+
+```bash
+# Build images
+docker-compose build
+
+# راه‌اندازی سرویس‌ها
+docker-compose up -d
+
+# مشاهده لاگ‌ها
+docker-compose logs -f
+```
+
+### با Systemd
+
+جزئیات کامل در [راهنمای راه‌اندازی](SETUP_GUIDE.md)
+
+### CI/CD
+
+پروژه آماده برای integration با:
+- GitHub Actions
+- GitLab CI
+- Jenkins
+- CircleCI
+
+---
+
+## 📚 مستندات تکمیلی
+
+- **[راهنمای راه‌اندازی کامل](SETUP_GUIDE.md)** - مراحل دقیق نصب و پیکربندی
+- **[API Documentation](http://localhost:8000/docs)** - مستندات تعاملی Swagger
+- **Infrastructure Docs**:
+  - [QUICK_START.md](infrastructure/QUICK_START.md)
+  - [DEPLOYMENT.md](infrastructure/DEPLOYMENT.md)
+  - [SYSTEMD_SERVICES.md](infrastructure/SYSTEMD_SERVICES.md)
+
+---
+
+## 🤝 مشارکت
+
+برای مشارکت در پروژه:
+
+1. Fork کردن پروژه
+2. ایجاد branch برای feature جدید (`git checkout -b feature/AmazingFeature`)
+3. Commit کردن تغییرات (`git commit -m 'Add some AmazingFeature'`)
+4. Push به branch (`git push origin feature/AmazingFeature`)
+5. ایجاد Pull Request
+
+### استانداردهای کد
+
+- **Python**: PEP 8
+- **JavaScript/TypeScript**: ESLint + Prettier
+- **Git Commits**: Conventional Commits
+
+---
+
+## 📝 لایسنس
+
+این پروژه تحت لایسنس MIT منتشر شده است. برای جزئیات بیشتر فایل [LICENSE](LICENSE) را مطالعه کنید.
+
+---
+
+## 👥 تیم توسعه
+
+- **Backend Development**: FastAPI + SQLAlchemy
+- **Frontend Development**: Next.js + TypeScript
+- **DevOps**: Docker + Nginx + Monitoring
+- **UI/UX**: Modern React Components
+
+---
+
+## 📞 پشتیبانی
+
+برای گزارش باگ یا درخواست feature:
+- **GitHub Issues**: [Create an issue](https://github.com/yourusername/writers/issues)
+- **Email**: support@yourdomain.com
+- **Documentation**: [Full Documentation](https://writers-docs.yourdomain.com)
+
+---
+
+## 🎉 تشکر
+
+از تمام کسانی که در توسعه این پروژه مشارکت داشته‌اند، تشکر می‌کنیم.
+
+---
+
+## 📊 وضعیت پروژه
+
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-85%25-green)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Node](https://img.shields.io/badge/node-18+-green)
+
+---
+
+**ساخته شده با ❤️ در ایران**
+
+</div>

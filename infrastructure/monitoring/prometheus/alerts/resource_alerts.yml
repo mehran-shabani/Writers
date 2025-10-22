@@ -1,0 +1,93 @@
+# Resource alert rules for RAM, GPU, and disk usage
+
+groups:
+  - name: resource_alerts
+    interval: 30s
+    rules:
+      # High RAM usage alert
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% (current: {{ $value }}%)"
+          
+      # Critical RAM usage alert
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: resources
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is above 95% (current: {{ $value }}%). System may become unstable."
+
+      # High disk usage alert
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is above 80% (current: {{ $value }}%)"
+
+      # Critical disk usage alert
+      - alert: CriticalDiskUsage
+        expr: (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_free_bytes{mountpoint="/"}) / node_filesystem_size_bytes{mountpoint="/"} * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          category: resources
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage is above 90% (current: {{ $value }}%). Immediate action required."
+
+      # GPU temperature alert
+      - alert: HighGPUTemperature
+        expr: nvidia_gpu_temperature_celsius > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: gpu
+        annotations:
+          summary: "GPU temperature is high"
+          description: "GPU {{ $labels.gpu }} temperature is {{ $value }}°C (threshold: 80°C)"
+
+      # Critical GPU temperature
+      - alert: CriticalGPUTemperature
+        expr: nvidia_gpu_temperature_celsius > 90
+        for: 2m
+        labels:
+          severity: critical
+          category: gpu
+        annotations:
+          summary: "GPU temperature is critical"
+          description: "GPU {{ $labels.gpu }} temperature is {{ $value }}°C. Risk of thermal throttling or damage."
+
+      # GPU memory usage
+      - alert: HighGPUMemoryUsage
+        expr: (nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: gpu
+        annotations:
+          summary: "GPU memory usage is high"
+          description: "GPU {{ $labels.gpu }} memory usage is {{ $value }}%"
+
+      # High CPU load
+      - alert: HighCPULoad
+        expr: node_load5 / count(node_cpu_seconds_total{mode="idle"}) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU load detected"
+          description: "5-minute load average is {{ $value }} per core"
