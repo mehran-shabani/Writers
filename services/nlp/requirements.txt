@@ -13,4 +13,4 @@ markdown==3.7
 weasyprint==62.3
 jinja2==3.1.6
 urllib3>=2.2.3,<3
-starlette>=0.40.0
+starlette>=0.47.2
