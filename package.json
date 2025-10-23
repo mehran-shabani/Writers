@@ -1,0 +1,23 @@
+{
+  "name": "writers-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Build tooling for the Writers monorepo",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^19.4.0",
+    "@commitlint/config-conventional": "^19.4.0",
+    "@semantic-release/commit-analyzer": "^13.0.0",
+    "@semantic-release/github": "^9.2.4",
+    "@semantic-release/release-notes-generator": "^12.1.0",
+    "semantic-release": "^24.1.0"
+  },
+  "release": {
+    "branches": ["main", "develop", "beta"],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github"
+    ]
+  }
+}

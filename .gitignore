@@ -78,7 +78,6 @@ credentials/
 
 # Release and versioning
 CHANGELOG.md
-package-lock.json
 .semantic-release/
 
 # Husky
