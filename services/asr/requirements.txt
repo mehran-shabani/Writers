@@ -1,4 +1,6 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-numpy
-faster-whisper==1.0.0
+services/asr/requirements.txt
+
+fastapi==0.118.3
+ uvicorn[standard]==0.30.6
+ numpy
+ faster-whisper==1.0.0
