@@ -1,0 +1,70 @@
+{
+  "name": "Writers Codespace",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "gpu": "optional"
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "forwardPorts": [
+    7000,
+    8000,
+    8001,
+    9000,
+    9001,
+    5432,
+    6379
+  ],
+  "portsAttributes": {
+    "7000": {
+      "label": "ASR API"
+    },
+    "8000": {
+      "label": "vLLM/OpenAI Compatible API"
+    },
+    "8001": {
+      "label": "NLP API"
+    },
+    "9000": {
+      "label": "MinIO S3"
+    },
+    "9001": {
+      "label": "MinIO Console"
+    },
+    "5432": {
+      "label": "PostgreSQL"
+    },
+    "6379": {
+      "label": "Redis"
+    }
+  },
+  "containerEnv": {
+    "DOCKER_BUILDKIT": "1",
+    "COMPOSE_DOCKER_CLI_BUILD": "1",
+    "NVIDIA_VISIBLE_DEVICES": "all",
+    "NVIDIA_DRIVER_CAPABILITIES": "compute,utility"
+  },
+  "runArgs": [
+    "--init"
+  ],
+  "postCreateCommand": "make build && make up && make migrate && make init-bucket",
+  "postAttachCommand": {
+    "server": "echo '🚀 Codespace ready. Run \\\"make logs\\\" to follow services.'"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  }
+}
