@@ -9,14 +9,14 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends bash \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
+COPY worker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy worker code and shared backend package
-COPY . ./worker
-COPY ../backend ./backend
+COPY worker ./worker
+COPY backend ./backend
 
 ENV PYTHONPATH="/app/backend"
 
