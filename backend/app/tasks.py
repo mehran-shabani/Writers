@@ -1,5 +1,7 @@
+import json
 import os
 import time
+from datetime import datetime
 from uuid import UUID
 from typing import Dict, Any
 from .celery_app import celery_app
@@ -219,25 +221,50 @@ def process_task_file(task_id: str, file_path: str):
         # Simulate file processing
         time.sleep(2)  # Simulate some processing time
         
+        # Prepare storage paths
+        storage_root = os.getenv("STORAGE_ROOT", "/var/app/storage")
+        results_dir = os.path.join(storage_root, "results")
+        os.makedirs(results_dir, exist_ok=True)
+
+        result_filename = f"{task_id}_result.json"
+        result_path = os.path.join(results_dir, result_filename)
+
         # Update task status in database
         SessionLocal = get_session_local()
         session = SessionLocal()
-        
+
         try:
             task_uuid = UUID(task_id)
             statement = select(Task).where(Task.id == task_uuid)
             task = session.exec(statement).first()
-            
+
             if task:
+                result_payload = {
+                    "status": "success",
+                    "task_id": task_id,
+                    "file_path": file_path,
+                    "message": "File processed successfully",
+                    "processed_at": datetime.utcnow().isoformat()
+                }
+
+                with open(result_path, "w", encoding="utf-8") as result_file:
+                    json.dump(result_payload, result_file, ensure_ascii=False, indent=2)
+
+                completed_at = datetime.utcnow()
                 task.status = TaskStatus.COMPLETED
+                task.result_path = result_path
+                task.completed_at = completed_at
+                task.updated_at = completed_at
                 session.add(task)
                 session.commit()
                 session.refresh(task)
-                
+
                 return {
                     "status": "success",
                     "task_id": task_id,
                     "file_path": file_path,
+                    "result_path": result_path,
+                    "completed_at": completed_at.isoformat(),
                     "message": "File processed successfully"
                 }
             else:
@@ -260,7 +287,9 @@ def process_task_file(task_id: str, file_path: str):
             task = session.exec(statement).first()
             
             if task:
+                now = datetime.utcnow()
                 task.status = TaskStatus.CANCELLED
+                task.updated_at = now
                 session.add(task)
                 session.commit()
         finally:
