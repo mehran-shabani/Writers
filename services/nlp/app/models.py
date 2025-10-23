@@ -1,5 +1,7 @@
-import os, uuid, datetime as dt
-from sqlalchemy import create_engine, Column, String, DateTime, Text
+import os
+import uuid
+import datetime as dt
+from sqlalchemy import create_engine, Column, String, DateTime, Text, Index, Enum
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DSN = os.getenv("POSTGRES_DSN")
@@ -10,10 +12,24 @@ Base = declarative_base()
 class Job(Base):
     __tablename__ = "jobs"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    status = Column(String, default="queued")  # queued|processing|done|error
+    status = Column(
+        Enum("queued", "processing", "done", "error", name="job_status"),
+        default="queued",
+        nullable=False
+    )
     error = Column(Text, nullable=True)
     audio_key = Column(String, nullable=True)
     md_key = Column(String, nullable=True)
     pdf_key = Column(String, nullable=True)
-    created_at = Column(DateTime, default=dt.datetime.utcnow)
-    updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False,
+        index=True
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        onupdate=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False
+    )

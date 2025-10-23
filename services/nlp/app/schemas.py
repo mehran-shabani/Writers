@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 class UploadResponse(BaseModel):
     job_id: str
@@ -21,17 +21,17 @@ class SummarizeIn(BaseModel):
 class Section(BaseModel):
     heading: str
     summary: str
-    key_points: List[str]
-    traps: List[str]
+    key_points: list[str]
+    traps: list[str]
 
 class MCQ(BaseModel):
     stem: str
-    options: List[str]
+    options: list[str]
     answer: str
     rationale: str
 
 class SummarizeOut(BaseModel):
     title: str
-    sections: List[Section]
-    mcqs: List[MCQ]
+    sections: list[Section]
+    mcqs: list[MCQ]
     night_before: str
