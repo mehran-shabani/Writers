@@ -21,9 +21,25 @@ export async function POST(request: NextRequest) {
     const nextResponse = NextResponse.json(data, { status: response.status });
 
     // Forward Set-Cookie headers (to clear cookies)
-    const setCookies = response.headers.get('set-cookie');
-    if (setCookies) {
-      nextResponse.headers.set('Set-Cookie', setCookies);
+    const responseHeaders = response.headers as unknown as {
+      getSetCookie?: () => string[];
+      raw?: () => Record<string, string[]>;
+    };
+
+    const setCookieHeaders =
+      typeof responseHeaders.getSetCookie === 'function'
+        ? responseHeaders.getSetCookie()
+        : responseHeaders.raw?.()['set-cookie'];
+
+    if (setCookieHeaders?.length) {
+      for (const cookie of setCookieHeaders) {
+        nextResponse.headers.append('Set-Cookie', cookie);
+      }
+    } else {
+      const singleCookie = response.headers.get('set-cookie');
+      if (singleCookie) {
+        nextResponse.headers.append('Set-Cookie', singleCookie);
+      }
     }
 
     return nextResponse;

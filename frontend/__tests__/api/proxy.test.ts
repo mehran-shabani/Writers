@@ -9,6 +9,25 @@ import { POST as registerPost } from '@/app/api/auth/register/route';
 import { GET as meGet } from '@/app/api/auth/me/route';
 import { POST as logoutPost } from '@/app/api/auth/logout/route';
 
+const getSetCookieArray = (headers: Headers): string[] => {
+  const extendedHeaders = headers as unknown as {
+    getSetCookie?: () => string[];
+    raw?: () => Record<string, string[]>;
+  };
+
+  if (typeof extendedHeaders.getSetCookie === 'function') {
+    return extendedHeaders.getSetCookie();
+  }
+
+  const rawCookies = extendedHeaders.raw?.()['set-cookie'];
+  if (rawCookies?.length) {
+    return rawCookies;
+  }
+
+  const singleCookie = headers.get('set-cookie');
+  return singleCookie ? [singleCookie] : [];
+};
+
 // Mock fetch globally
 global.fetch = jest.fn();
 
@@ -19,6 +38,10 @@ describe('API Proxy Routes', () => {
 
   describe('POST /api/auth/login', () => {
     it('should proxy login request and forward cookies', async () => {
+      const headers = new Headers();
+      headers.append('set-cookie', 'access_token=abc123; HttpOnly; Secure');
+      headers.append('set-cookie', 'refresh_token=def456; HttpOnly; Secure');
+
       const mockResponse = {
         ok: true,
         status: 200,
@@ -26,9 +49,7 @@ describe('API Proxy Routes', () => {
           user: { id: 1, email: 'test@example.com', username: 'testuser' },
           token_type: 'bearer',
         }),
-        headers: new Headers({
-          'set-cookie': 'access_token=abc123; HttpOnly; Secure',
-        }),
+        headers,
       };
 
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -51,7 +72,13 @@ describe('API Proxy Routes', () => {
       expect(response.status).toBe(200);
       expect(data).toHaveProperty('user');
       expect(data.user).toHaveProperty('id');
-      expect(response.headers.get('set-cookie')).toContain('access_token');
+      const forwardedCookies = getSetCookieArray(response.headers);
+      expect(forwardedCookies).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('access_token=abc123'),
+          expect.stringContaining('refresh_token=def456'),
+        ])
+      );
     });
 
     it('should handle login errors gracefully', async () => {
@@ -94,6 +121,10 @@ describe('API Proxy Routes', () => {
 
   describe('POST /api/auth/register', () => {
     it('should proxy register request and forward cookies', async () => {
+      const headers = new Headers();
+      headers.append('set-cookie', 'access_token=xyz789; HttpOnly; Secure');
+      headers.append('set-cookie', 'refresh_token=rst987; HttpOnly; Secure');
+
       const mockResponse = {
         ok: true,
         status: 201,
@@ -101,9 +132,7 @@ describe('API Proxy Routes', () => {
           user: { id: 1, email: 'new@example.com', username: 'newuser' },
           token_type: 'bearer',
         }),
-        headers: new Headers({
-          'set-cookie': 'access_token=xyz789; HttpOnly; Secure',
-        }),
+        headers,
       };
 
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -123,7 +152,13 @@ describe('API Proxy Routes', () => {
       expect(response.status).toBe(201);
       expect(data).toHaveProperty('user');
       expect(data.user).toHaveProperty('id');
-      expect(response.headers.get('set-cookie')).toContain('access_token');
+      const forwardedCookies = getSetCookieArray(response.headers);
+      expect(forwardedCookies).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('access_token=xyz789'),
+          expect.stringContaining('refresh_token=rst987'),
+        ])
+      );
     });
   });
 
@@ -175,13 +210,15 @@ describe('API Proxy Routes', () => {
 
   describe('POST /api/auth/logout', () => {
     it('should proxy logout and clear cookies', async () => {
+      const headers = new Headers();
+      headers.append('set-cookie', 'access_token=; Max-Age=0');
+      headers.append('set-cookie', 'refresh_token=; Max-Age=0');
+
       const mockResponse = {
         ok: true,
         status: 200,
         json: async () => ({ message: 'Logged out successfully' }),
-        headers: new Headers({
-          'set-cookie': 'access_token=; Max-Age=0',
-        }),
+        headers,
       };
 
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -196,7 +233,13 @@ describe('API Proxy Routes', () => {
       const response = await logoutPost(request);
 
       expect(response.status).toBe(200);
-      expect(response.headers.get('set-cookie')).toContain('Max-Age=0');
+      const forwardedCookies = getSetCookieArray(response.headers);
+      expect(forwardedCookies).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('access_token='),
+          expect.stringContaining('refresh_token='),
+        ])
+      );
     });
   });
 });
