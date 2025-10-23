@@ -1,0 +1,45 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run weekly on Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot-manual:
+    name: Check for outdated dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Check npm dependencies
+        working-directory: frontend
+        run: |
+          npm outdated || true
+          echo "Frontend dependency check completed"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check Python dependencies
+        run: |
+          pip install pip-audit
+          pip-audit -r backend/requirements.txt || true
+          pip-audit -r services/asr/requirements.txt || true
+          pip-audit -r services/nlp/requirements.txt || true
+          pip-audit -r worker/requirements.txt || true
+
