@@ -80,7 +80,10 @@ echo ""
 echo "Starting Celery Worker..."
 echo ""
 
-cd /workspace/backend
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}
+
+cd "$PROJECT_ROOT/backend"
 
 exec celery -A app.celery_app worker \
     --loglevel=$WORKER_LOG_LEVEL \

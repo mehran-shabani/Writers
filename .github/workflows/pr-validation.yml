@@ -17,9 +17,8 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install commitlint
-        run: |
-          npm install --save-dev @commitlint/cli @commitlint/config-conventional
+      - name: Install tooling
+        run: npm ci
 
       - name: Validate PR title with commitlint
         env:
