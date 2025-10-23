@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash \
+    && apt-get install -y --no-install-recommends bash=5.2.* \
     && rm -rf /var/lib/apt/lists/*
 
 COPY worker/requirements.txt ./requirements.txt
