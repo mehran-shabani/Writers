@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running pre-push checks..."
+
+# Get the current branch name
+current_branch=$(git symbolic-ref --short HEAD)
+
+# Prevent pushing to main/develop without PR
+if [ "$current_branch" = "main" ] || [ "$current_branch" = "develop" ]; then
+    echo "⚠️  WARNING: You are about to push to $current_branch."
+    echo "Please ensure this is intentional and follows the contribution guidelines."
+    read -p "Continue? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Push cancelled."
+        exit 1
+    fi
+fi
+
+# Check that all commits follow conventional commit format
+commits=$(git log @{u}.. --pretty=format:"%s" 2>/dev/null)
+if [ -n "$commits" ]; then
+    echo "Validating commit messages..."
+    while IFS= read -r commit_msg; do
+        if ! echo "$commit_msg" | npx commitlint --from=HEAD~1 2>/dev/null; then
+            echo "❌ Invalid commit message format: $commit_msg"
+            echo "Please follow conventional commit format (feat:, fix:, docs:, etc.)"
+            exit 1
+        fi
+    done <<< "$commits"
+fi
+
+echo "✅ Pre-push checks passed!"
+

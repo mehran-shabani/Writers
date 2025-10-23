@@ -1,0 +1,54 @@
+# Auto-label PRs based on file paths changed
+
+'service: asr':
+  - services/asr/**/*
+
+'service: nlp':
+  - services/nlp/**/*
+
+'service: backend':
+  - backend/**/*
+
+'service: frontend':
+  - frontend/**/*
+
+'service: worker':
+  - worker/**/*
+
+'infrastructure':
+  - infrastructure/**/*
+  - docker-compose*.yml
+  - Dockerfile
+  - .dockerignore
+
+'documentation':
+  - '**/*.md'
+  - docs/**/*
+
+'tests':
+  - '**/*test*'
+  - '**/*spec*'
+  - '**/tests/**/*'
+  - '**/__tests__/**/*'
+
+'dependencies':
+  - '**/package.json'
+  - '**/package-lock.json'
+  - '**/requirements.txt'
+  - '**/Pipfile'
+  - '**/Pipfile.lock'
+
+'ci/cd':
+  - .github/**/*
+  - .husky/**/*
+  - commitlint.config.js
+  - .releaserc.js
+
+'configuration':
+  - '**/*.config.js'
+  - '**/*.config.ts'
+  - '**/tsconfig.json'
+  - '**/alembic.ini'
+  - '**/pytest.ini'
+  - '**/jest.config.js'
+

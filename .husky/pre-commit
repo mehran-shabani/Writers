@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running pre-commit checks..."
+
+# Check for debug statements and console logs
+if git diff --cached --name-only | grep -E '\.(js|ts|tsx|jsx|py)$' | xargs grep -n -E '(console\.log|debugger|pdb\.set_trace|breakpoint\(\))' --with-filename; then
+    echo "❌ Found debug statements in staged files. Please remove them before committing."
+    exit 1
+fi
+
+# Check for merge conflict markers
+if git diff --cached --name-only | xargs grep -E '(<<<<<<<|=======|>>>>>>>)' --with-filename; then
+    echo "❌ Found merge conflict markers in staged files."
+    exit 1
+fi
+
+# Check for trailing whitespace
+if ! git diff --cached --check; then
+    echo "❌ Found trailing whitespace in staged files."
+    exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"
+
