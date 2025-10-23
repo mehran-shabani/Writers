@@ -192,7 +192,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build ${{ matrix.service }} image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service == 'asr' && 'services/asr' || matrix.service == 'nlp' && 'services/nlp' || matrix.service }}
           file: ./${{ matrix.service == 'asr' && 'services/asr' || matrix.service == 'nlp' && 'services/nlp' || matrix.service }}/Dockerfile
