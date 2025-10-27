@@ -5,7 +5,7 @@
   "description": "Build tooling for the Writers monorepo",
   "license": "MIT",
   "devDependencies": {
-    "@commitlint/cli": "^19.4.0",
+    "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^19.4.0",
     "@semantic-release/commit-analyzer": "^13.0.0",
     "@semantic-release/github": "^9.2.4",
