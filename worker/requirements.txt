@@ -8,7 +8,7 @@ pydantic==2.12.3
 python-dotenv==1.1.1
 
 # Celery and Redis
-celery==5.3.4
+celery==5.5.3
 redis==7.0.0
 
 # Resource monitoring
