@@ -12,7 +12,7 @@ celery==5.3.4
 redis==7.0.0
 
 # Resource monitoring
-psutil==7.1.1
+psutil==7.1.2
 
 # For future audio processing integration
 # Uncomment when implementing actual transcription
