@@ -12,7 +12,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@tiptap/extension-placeholder": "^3.7.2",
+    "@tiptap/extension-placeholder": "^3.10.1",
     "@tiptap/extension-typography": "^3.8.0",
     "@tiptap/react": "^3.7.2",
     "@tiptap/starter-kit": "^3.8.0",
