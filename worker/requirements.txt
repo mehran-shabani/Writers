@@ -2,7 +2,7 @@
 # Uses the same dependencies as the backend for shared code access
 
 # Core dependencies (same as backend)
-sqlmodel==0.0.14
+sqlmodel==0.0.27
 psycopg2-binary==2.9.11
 pydantic==2.12.3
 python-dotenv==1.2.1
