@@ -3,7 +3,7 @@ uvicorn[standard]==0.38.0
 pydantic==2.12.3
 requests==2.32.5
 boto3==1.35.24
-botocore==1.35.24
+botocore==1.40.64
 sqlalchemy==2.0.35
 psycopg[binary]==3.2.11
 celery==5.5.3
