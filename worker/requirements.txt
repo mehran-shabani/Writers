@@ -9,7 +9,7 @@ python-dotenv==1.2.1
 
 # Celery and Redis
 celery==5.5.3
-redis==7.0.0
+redis==7.0.1
 
 # Resource monitoring
 psutil==7.1.2
