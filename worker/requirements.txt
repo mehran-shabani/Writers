@@ -4,7 +4,7 @@
 # Core dependencies (same as backend)
 sqlmodel==0.0.27
 psycopg2-binary==2.9.11
-pydantic==2.12.3
+pydantic==2.12.4
 python-dotenv==1.2.1
 
 # Celery and Redis
